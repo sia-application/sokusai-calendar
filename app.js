@@ -6,7 +6,7 @@ let currentDate = new Date();
 // 例: '2026-01-15': true は2026年1月15日にマークを表示
 const markedDates = {
     '2026-01-15': true,
-    // '2026-01-20': true,
+    '2026-01-20': true,
 };
 
 // ===== DOM Elements =====
