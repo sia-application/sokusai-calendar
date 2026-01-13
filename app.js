@@ -37,6 +37,37 @@ const currentMonthEl = document.getElementById('currentMonth');
 const prevMonthBtn = document.getElementById('prevMonth');
 const nextMonthBtn = document.getElementById('nextMonth');
 const downloadBtn = document.getElementById('downloadBtn');
+const countdownEl = document.getElementById('countdown');
+
+// ===== Countdown Function =====
+function updateCountdown() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get all marked dates and sort them (parse as local time)
+    const dates = Object.keys(markedDates)
+        .map(dateStr => {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        })
+        .sort((a, b) => a - b);
+
+    // Find next date after today (not including today)
+    const nextDate = dates.find(date => date > today);
+
+    if (nextDate) {
+        const diffTime = nextDate - today;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 1) {
+            countdownEl.textContent = '明日！';
+        } else {
+            countdownEl.textContent = `残り ${diffDays} 日`;
+        }
+    } else {
+        countdownEl.textContent = '予定なし';
+    }
+}
 
 // ===== Calendar Functions =====
 function renderCalendar() {
@@ -183,3 +214,4 @@ downloadBtn.addEventListener('click', (e) => {
 
 // ===== Initialize =====
 renderCalendar();
+updateCountdown();

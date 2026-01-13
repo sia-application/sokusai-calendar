@@ -115,6 +115,19 @@ body {
     flex-wrap: wrap;
 }
 
+/* ===== Countdown ===== */
+.countdown {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #e65c00, #f9a825);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
+    box-shadow: 0 4px 15px rgba(230, 92, 0, 0.4);
+}
+
 /* ===== Lock Button ===== */
 .lock-btn {
     display: flex;
