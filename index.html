@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>即採カレンダー</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="title-container">
+                <h1>🗓️即採カレンダー</h1>
+                <img src="sokusai.jpg" alt="SOKUSAI" class="title-character">
+            </div>
+            <div class="header-buttons">
+                <button id="lockBtn" class="lock-btn">
+                    <span id="lockIcon">🔓</span>
+                    <span id="lockText">ロック</span>
+                </button>
+                <button id="downloadBtn" class="download-btn">
+                    <span class="icon">📷</span>
+                    画像をダウンロード
+                </button>
+            </div>
+        </header>
+
+        <div class="calendar-wrapper">
+            <div class="calendar-controls">
+                <button id="prevMonth" class="nav-btn">
+                    <span>◀</span>
+                </button>
+                <h2 id="currentMonth" class="month-title"></h2>
+                <button id="nextMonth" class="nav-btn">
+                    <span>▶</span>
+                </button>
+            </div>
+
+            <div id="calendar" class="calendar">
+                <div class="weekdays">
+                    <div class="weekday sun">日</div>
+                    <div class="weekday">月</div>
+                    <div class="weekday">火</div>
+                    <div class="weekday">水</div>
+                    <div class="weekday">木</div>
+                    <div class="weekday">金</div>
+                    <div class="weekday sat">土</div>
+                </div>
+                <div id="calendarDays" class="days"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- パスワード入力モーダル -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content password-modal">
+            <div class="modal-header">
+                <h3>🔐 ロック解除</h3>
+            </div>
+            <div class="modal-body">
+                <p>パスワードを入力してください</p>
+                <input type="password" id="passwordInput" class="password-input" placeholder="パスワード">
+                <p id="passwordError" class="password-error"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelPassword" class="btn btn-cancel">キャンセル</button>
+                <button id="submitPassword" class="btn btn-primary">解除</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

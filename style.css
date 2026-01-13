@@ -1,0 +1,746 @@
+/* ===== CSS Variables ===== */
+:root {
+    --bg-primary: linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ffecd2 100%);
+    --bg-secondary: #ffffff;
+    --bg-card: #f8f9ff;
+    --bg-hover: #eef1ff;
+    --text-primary: #2d3748;
+    --text-secondary: #718096;
+    --accent-primary: #667eea;
+    --accent-secondary: #764ba2;
+    --border-color: rgba(102, 126, 234, 0.15);
+    --shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
+    --radius: 16px;
+    --radius-sm: 8px;
+    --transition: all 0.3s ease;
+}
+
+/* ===== Reset & Base ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ffecd2 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: var(--text-primary);
+    padding: 20px;
+}
+
+/* ===== App Container ===== */
+.app-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* ===== Header ===== */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+    background: linear-gradient(135deg, #e65c00, #f9a825);
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    box-shadow: 0 4px 15px rgba(230, 92, 0, 0.4);
+    line-height: 1.2;
+}
+
+/* ===== Title Container ===== */
+.title-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.title-character {
+    width: 42px;
+    height: 42px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease;
+}
+
+.title-character:hover {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.download-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #e65c00, #f9a825);
+    border: none;
+    border-radius: var(--radius);
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(230, 92, 0, 0.4);
+}
+
+.download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(230, 92, 0, 0.5);
+}
+
+.download-btn:active {
+    transform: translateY(0);
+}
+
+.download-btn .icon {
+    font-size: 1.2rem;
+}
+
+/* ===== Header Buttons ===== */
+.header-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ===== Lock Button ===== */
+.lock-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #e0e0e0;
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.lock-btn:hover {
+    background: #ffffff;
+    border-color: #ccc;
+    transform: translateY(-2px);
+}
+
+.lock-btn.locked {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+}
+
+.lock-btn.locked:hover {
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+}
+
+/* ===== Image Modal ===== */
+.image-modal {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.image-modal .close-btn {
+    position: absolute;
+    top: -20px;
+    right: -20px;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.modal-image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: popIn 0.3s ease;
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.modal-image {
+    max-width: 80vw;
+    max-height: 70vh;
+    border-radius: var(--radius);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.modal-date {
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: var(--radius);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.download-btn .icon {
+    font-size: 1.2rem;
+}
+
+/* ===== Calendar Wrapper ===== */
+.calendar-wrapper {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+}
+
+/* ===== Calendar Controls ===== */
+.calendar-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.nav-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-btn:hover {
+    background: var(--accent-primary);
+    transform: scale(1.1);
+}
+
+.month-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* ===== Calendar Grid ===== */
+.calendar {
+    user-select: none;
+}
+
+.weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.weekday {
+    text-align: center;
+    padding: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.weekday.sun {
+    color: #ef4444;
+}
+
+.weekday.sat {
+    color: #3b82f6;
+}
+
+.days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.day {
+    aspect-ratio: 1;
+    min-height: 80px;
+    padding: 8px;
+    background: var(--bg-card);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.day:hover {
+    background: var(--bg-hover);
+    transform: scale(1.02);
+}
+
+.day.other-month {
+    opacity: 0.3;
+}
+
+.day.today {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+    border: 2px solid var(--accent-primary);
+}
+
+.day-number {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.day.sunday .day-number {
+    color: #ef4444;
+}
+
+.day.saturday .day-number {
+    color: #3b82f6;
+}
+
+/* ===== Date Marks ===== */
+.mark-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.date-mark {
+    width: 100%;
+    max-width: 50px;
+    height: auto;
+    border-radius: 6px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+    transition: transform 0.3s ease;
+}
+
+.day:hover .date-mark {
+    transform: scale(1.1);
+}
+
+.day.has-mark {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(139, 195, 74, 0.15));
+    border: 2px solid #4caf50;
+}
+
+.day.has-mark.today {
+    border: 2px solid #e65c00;
+    background: linear-gradient(135deg, rgba(230, 92, 0, 0.2), rgba(249, 168, 37, 0.2));
+}
+
+/* ===== Events ===== */
+.events-container {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.event {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.event:hover {
+    transform: scale(1.02);
+    filter: brightness(1.1);
+}
+
+.more-events {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: auto;
+}
+
+/* ===== Modal ===== */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition);
+    z-index: 1000;
+}
+
+.modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    width: 90%;
+    max-width: 420px;
+    transform: scale(0.9) translateY(20px);
+    transition: var(--transition);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+}
+
+.modal.active .modal-content {
+    transform: scale(1) translateY(0);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.close-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-btn:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.form-group input[type="text"],
+.form-group input[type="time"] {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: var(--transition);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+/* ===== Color Picker ===== */
+.color-picker {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.color-option {
+    width: 36px;
+    height: 36px;
+    border: 3px solid transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.color-option:hover {
+    transform: scale(1.15);
+}
+
+.color-option.selected {
+    border-color: white;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+/* ===== Buttons ===== */
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn {
+    flex: 1;
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.btn-primary:hover {
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
+    transform: translateY(-2px);
+}
+
+.btn-cancel {
+    background: #e0e0e0;
+    color: var(--text-primary);
+}
+
+.btn-cancel:hover {
+    background: #d0d0d0;
+    transform: translateY(-2px);
+}
+
+/* ===== Password Modal ===== */
+.password-modal {
+    max-width: 360px;
+}
+
+.password-modal .modal-header {
+    justify-content: center;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.password-modal .modal-header h3 {
+    font-size: 1.5rem;
+}
+
+.password-modal .modal-body {
+    text-align: center;
+    padding: 20px 24px;
+}
+
+.password-modal .modal-body p {
+    margin-bottom: 16px;
+    color: var(--text-secondary);
+}
+
+.password-input {
+    width: 100%;
+    padding: 14px 16px;
+    font-size: 1.1rem;
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    text-align: center;
+    letter-spacing: 2px;
+    transition: var(--transition);
+}
+
+.password-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+}
+
+.password-error {
+    color: #ef4444;
+    font-size: 0.875rem;
+    min-height: 1.5rem;
+    margin-top: 12px;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+}
+
+.btn-danger:hover {
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+    transform: translateY(-2px);
+}
+
+/* ===== Download Animation ===== */
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.downloading {
+    animation: pulse 1s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+    .title-character {
+        width: 45px;
+    }
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 12px;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .title-container {
+        justify-content: center;
+    }
+
+    .header h1 {
+        font-size: 1.5rem;
+    }
+
+    .title-character {
+        width: 40px;
+    }
+
+    .download-btn {
+        justify-content: center;
+        padding: 12px 20px;
+        font-size: 0.9rem;
+    }
+
+    .calendar-wrapper {
+        padding: 12px;
+    }
+
+    .calendar-controls {
+        margin-bottom: 16px;
+    }
+
+    .day {
+        min-height: 50px;
+        padding: 4px;
+        aspect-ratio: auto;
+    }
+
+    .day-number {
+        font-size: 0.7rem;
+    }
+
+    .event {
+        font-size: 0.55rem;
+        padding: 1px 3px;
+    }
+
+    .month-title {
+        font-size: 1rem;
+    }
+
+    .nav-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.875rem;
+    }
+
+    .weekday {
+        padding: 8px 2px;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .header h1 {
+        font-size: 1.25rem;
+    }
+
+    .title-character {
+        width: 35px;
+    }
+
+    .day {
+        min-height: 40px;
+        padding: 2px;
+    }
+
+    .day-number {
+        font-size: 0.65rem;
+    }
+
+    .events-container {
+        display: none;
+    }
+}
