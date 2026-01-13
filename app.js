@@ -1,8 +1,13 @@
 // ===== State Management =====
 let currentDate = new Date();
-let isLocked = false;
-let markedDates = JSON.parse(localStorage.getItem('markedDates')) || {};
-const UNLOCK_PASSWORD = '19920717';
+
+// ===== マークする日付をここで設定 =====
+// 形式: 'YYYY-MM-DD': true
+// 例: '2026-01-15': true は2026年1月15日にマークを表示
+const markedDates = {
+    // '2026-01-15': true,
+    // '2026-01-20': true,
+};
 
 // ===== DOM Elements =====
 const calendarDays = document.getElementById('calendarDays');
@@ -10,14 +15,6 @@ const currentMonthEl = document.getElementById('currentMonth');
 const prevMonthBtn = document.getElementById('prevMonth');
 const nextMonthBtn = document.getElementById('nextMonth');
 const downloadBtn = document.getElementById('downloadBtn');
-const lockBtn = document.getElementById('lockBtn');
-const lockIcon = document.getElementById('lockIcon');
-const lockText = document.getElementById('lockText');
-const passwordModal = document.getElementById('passwordModal');
-const passwordInput = document.getElementById('passwordInput');
-const passwordError = document.getElementById('passwordError');
-const submitPasswordBtn = document.getElementById('submitPassword');
-const cancelPasswordBtn = document.getElementById('cancelPassword');
 
 // ===== Calendar Functions =====
 function renderCalendar() {
@@ -108,99 +105,7 @@ function createDayElement(dayNum, dateStr, isOtherMonth, dayOfWeek, isToday = fa
 
     dayEl.appendChild(markContainer);
 
-    // Click to toggle mark (if not locked)
-    dayEl.addEventListener('click', () => {
-        if (!isLocked) {
-            toggleMark(dateStr, dayEl);
-        }
-    });
-
     return dayEl;
-}
-
-// ===== Mark Functions =====
-function toggleMark(dateStr, dayEl) {
-    const markContainer = dayEl.querySelector('.mark-container');
-
-    if (markedDates[dateStr]) {
-        // Remove mark
-        delete markedDates[dateStr];
-        markContainer.innerHTML = '';
-        dayEl.classList.remove('has-mark');
-    } else {
-        // Add mark
-        markedDates[dateStr] = true;
-        const markImg = document.createElement('img');
-        markImg.src = 'sokusai.jpg';
-        markImg.alt = '予定';
-        markImg.className = 'date-mark';
-        markContainer.appendChild(markImg);
-        dayEl.classList.add('has-mark');
-
-        // Add pop animation
-        markImg.style.animation = 'popIn 0.3s ease';
-    }
-
-    // Save to localStorage
-    saveMarkedDates();
-}
-
-function saveMarkedDates() {
-    localStorage.setItem('markedDates', JSON.stringify(markedDates));
-}
-
-// ===== Lock Functions =====
-function toggleLock() {
-    if (isLocked) {
-        // Show password modal
-        showPasswordModal();
-    } else {
-        // Lock without password
-        isLocked = true;
-        updateLockButton();
-    }
-}
-
-function showPasswordModal() {
-    passwordInput.value = '';
-    passwordError.textContent = '';
-    passwordModal.classList.add('active');
-    // Focus input after modal animation
-    setTimeout(() => {
-        passwordInput.focus();
-    }, 100);
-}
-
-function hidePasswordModal() {
-    passwordModal.classList.remove('active');
-    passwordInput.value = '';
-    passwordError.textContent = '';
-}
-
-function checkPassword() {
-    const enteredPassword = passwordInput.value;
-
-    if (enteredPassword === UNLOCK_PASSWORD) {
-        isLocked = false;
-        updateLockButton();
-        hidePasswordModal();
-    } else {
-        passwordError.textContent = 'パスワードが正しくありません';
-        passwordInput.value = '';
-        passwordInput.focus();
-    }
-}
-
-function updateLockButton() {
-    if (isLocked) {
-        lockIcon.textContent = '🔒';
-        lockText.textContent = 'ロック中';
-        lockBtn.classList.add('locked');
-    } else {
-        lockIcon.textContent = '🔓';
-        lockText.textContent = 'ロック';
-        lockBtn.classList.remove('locked');
-    }
 }
 
 // ===== Download Function =====
@@ -252,25 +157,6 @@ downloadBtn.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     downloadCalendarImage();
-});
-lockBtn.addEventListener('click', toggleLock);
-
-// Password modal events
-submitPasswordBtn.addEventListener('click', checkPassword);
-cancelPasswordBtn.addEventListener('click', hidePasswordModal);
-
-passwordInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        checkPassword();
-    } else if (e.key === 'Escape') {
-        hidePasswordModal();
-    }
-});
-
-passwordModal.addEventListener('click', (e) => {
-    if (e.target === passwordModal) {
-        hidePasswordModal();
-    }
 });
 
 // ===== Initialize =====
