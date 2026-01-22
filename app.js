@@ -44,6 +44,13 @@ function updateCountdown() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Check if today is a marked date
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    if (markedDates[todayStr]) {
+        countdownEl.textContent = '当日！';
+        return;
+    }
+
     // Get all marked dates and sort them (parse as local time)
     const dates = Object.keys(markedDates)
         .map(dateStr => {
