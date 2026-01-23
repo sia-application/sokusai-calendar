@@ -18,36 +18,6 @@ const db = getFirestore(app);
 
 let currentDate = new Date();
 
-// ===== マークする日付をここで設定 =====
-// 形式: 'YYYY-MM-DD': true
-// 例: '2026-01-15': true は2026年1月15日にマークを表示
-const markedDates = {
-    '2026-01-08': true,
-    '2026-01-22': true,
-    '2026-02-05': true,
-    '2026-02-19': true,
-    '2026-03-05': true,
-    '2026-03-19': true,
-    '2026-04-02': true,
-    '2026-04-16': true,
-    '2026-05-07': true,
-    '2026-05-21': true,
-    '2026-06-04': true,
-    '2026-06-18': true,
-    '2026-07-02': true,
-    '2026-07-16': true,
-    '2026-08-06': true,
-    '2026-08-20': true,
-    '2026-09-03': true,
-    '2026-09-17': true,
-    '2026-10-01': true,
-    '2026-10-15': true,
-    '2026-10-29': true,
-    '2026-11-12': true,
-    '2026-11-26': true,
-    '2026-12-10': true
-};
-
 // ===== DOM Elements =====
 const calendarDays = document.getElementById('calendarDays');
 const currentMonthEl = document.getElementById('currentMonth');
@@ -67,36 +37,38 @@ let selectedColor = '#8b5cf6';
 
 // ===== Countdown Function =====
 function updateCountdown() {
+    if (!countdownEl) return;
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
-    // Check if today is a marked date
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    if (markedDates[todayStr]) {
-        countdownEl.textContent = '当日！';
+
+    // Get all unique event dates with their titles (not repeating events for simplicity)
+    const upcomingEvents = events
+        .filter(event => event.date >= todayStr && event.repeat === 'none')
+        .map(event => ({
+            date: event.date,
+            title: event.title
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Also check repeating events for today and upcoming
+    const allEventsForToday = getEventsForDate(todayStr);
+
+    if (allEventsForToday.length > 0) {
+        // Today has an event
+        countdownEl.textContent = `${allEventsForToday[0].title} 当日！`;
         return;
     }
 
-    // Get all marked dates and sort them (parse as local time)
-    const dates = Object.keys(markedDates)
-        .map(dateStr => {
-            const [year, month, day] = dateStr.split('-').map(Number);
-            return new Date(year, month - 1, day);
-        })
-        .sort((a, b) => a - b);
-
-    // Find next date after today (not including today)
-    const nextDate = dates.find(date => date > today);
-
-    if (nextDate) {
-        const diffTime = nextDate - today;
+    if (upcomingEvents.length > 0) {
+        const nextEvent = upcomingEvents[0];
+        const [year, month, day] = nextEvent.date.split('-').map(Number);
+        const eventDate = new Date(year, month - 1, day);
+        const diffTime = eventDate - today;
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-        if (diffDays === 1) {
-            countdownEl.textContent = '明日！';
-        } else {
-            countdownEl.textContent = `残り ${diffDays} 日`;
-        }
+        countdownEl.textContent = `${nextEvent.title}まで残り ${diffDays} 日`;
     } else {
         countdownEl.textContent = '予定なし';
     }
@@ -175,21 +147,7 @@ function createDayElement(dayNum, dateStr, isOtherMonth, dayOfWeek, isToday = fa
     dayNumber.textContent = dayNum;
     dayEl.appendChild(dayNumber);
 
-    // Mark container (existing functionality)
-    const markContainer = document.createElement('div');
-    markContainer.className = 'mark-container';
 
-    // Check if this date is marked
-    if (markedDates[dateStr]) {
-        const markImg = document.createElement('img');
-        markImg.src = './sokusai.jpg';
-        markImg.alt = '予定';
-        markImg.className = 'date-mark';
-        markContainer.appendChild(markImg);
-        dayEl.classList.add('has-mark');
-    }
-
-    dayEl.appendChild(markContainer);
 
     // Events container
     const eventsContainer = document.createElement('div');
@@ -399,6 +357,7 @@ function subscribeToEvents() {
             ...doc.data()
         }));
         renderCalendar();
+        updateCountdown();
     }, (error) => {
         console.error("Error getting events:", error);
     });
@@ -729,6 +688,5 @@ if (confirmEventDeleteBtn) {
 
 // ===== Initialize =====
 renderCalendar();
-updateCountdown();
 subscribeToPosts();
 subscribeToEvents();

@@ -141,6 +141,10 @@ body {
     box-shadow: 0 4px 15px rgba(230, 92, 0, 0.4);
 }
 
+.countdown:empty {
+    display: none;
+}
+
 /* ===== Lock Button ===== */
 .lock-btn {
     display: flex;
@@ -353,37 +357,6 @@ body {
 
 .day.saturday .day-number {
     color: #3b82f6;
-}
-
-/* ===== Date Marks ===== */
-.mark-container {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-
-.date-mark {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
-    transition: transform 0.3s ease;
-}
-
-.day:hover .date-mark {
-    transform: scale(1.1);
-}
-
-.day.has-mark {
-    background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(139, 195, 74, 0.15));
-    border: 2px solid #4caf50;
-}
-
-.day.has-mark.today {
-    border: 2px solid #e65c00;
-    background: linear-gradient(135deg, rgba(230, 92, 0, 0.2), rgba(249, 168, 37, 0.2));
 }
 
 /* ===== Events ===== */
@@ -745,20 +718,6 @@ body {
     .weekday {
         padding: 8px 2px;
         font-size: 0.75rem;
-    }
-
-    .mark-container {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2px;
-    }
-
-    .date-mark {
-        max-width: 100%;
-        max-height: 100%;
     }
 }
 
