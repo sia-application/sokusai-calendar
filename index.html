@@ -86,8 +86,8 @@
             <div class="modal-body">
                 <form id="bulletinForm" class="bulletin-form">
                     <div class="form-group">
-                        <label for="postName">お名前</label>
-                        <input type="text" id="postName" placeholder="お名前を入力" required>
+                        <label for="postTitle">タイトル</label>
+                        <input type="text" id="postTitle" placeholder="タイトルを入力" required>
                     </div>
                     <div class="form-group">
                         <label for="postMessage">メッセージ</label>
@@ -129,7 +129,7 @@
     <div id="eventModal" class="modal">
         <div class="modal-content event-modal">
             <div class="modal-header">
-                <h3>予定の登録</h3>
+                <h3 id="eventModalTitle">予定の登録</h3>
                 <button class="close-btn" id="closeEventModalBtn">×</button>
             </div>
             <div class="modal-body">
@@ -216,8 +216,36 @@
         </div>
     </div>
 
+    <!-- Event Detail Modal -->
+    <div id="eventDetailModal" class="modal">
+        <div class="modal-content event-detail-modal">
+            <div class="modal-header">
+                <h3>予定の詳細</h3>
+                <button class="close-btn" id="closeEventDetailModalBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-group">
+                    <div class="detail-label">日付</div>
+                    <div id="detailDate" class="detail-value"></div>
+                </div>
+                <div class="detail-group">
+                    <div class="detail-label">タイトル</div>
+                    <div id="detailTitle" class="detail-value highlight-text"></div>
+                </div>
+                <div class="detail-group" id="detailRepeatGroup" style="display: none;">
+                    <div class="detail-label">繰り返し</div>
+                    <div id="detailRepeat" class="detail-value"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger" id="detailDeleteBtn">削除</button>
+                    <button class="btn btn-primary" id="detailEditBtn">編集</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="site-footer">
-        <p>made for sia v1.0.1</p>
+        <p>made for sia v1.1.0</p>
     </footer>
 
     <script type="module" src="app.js"></script>

@@ -234,34 +234,13 @@ function createDayElement(dayNum, dateStr, isOtherMonth, dayOfWeek, isToday = fa
         eventBadge.style.backgroundColor = event.color || '#8b5cf6';
 
         let badgeContent = escapeHtml(event.title);
-        if (event.repeat && event.repeat !== 'none') {
-            const repeatLabels = { weekly: '週', monthly: '月', yearly: '年' };
-            badgeContent += `<span class="repeat-badge">${repeatLabels[event.repeat]}</span>`;
-        }
+        // Labels removed as per user request
         eventBadge.innerHTML = badgeContent;
 
-        // Click to delete event
+        // Click to view event details
         eventBadge.addEventListener('click', (e) => {
             e.stopPropagation();
-            eventToDeleteId = event.id;
-            eventToDeleteDate = dateStr;
-            eventToDeleteRepeat = event.repeat;
-
-            // Show/hide delete options based on whether it's a repeating event
-            const deleteOptionsSection = document.getElementById('deleteOptionsSection');
-            if (deleteOptionsSection) {
-                if (event.repeat && event.repeat !== 'none') {
-                    deleteOptionsSection.style.display = 'block';
-                    // Reset to default option
-                    const defaultOption = document.querySelector('input[name="deleteOption"][value="this"]');
-                    if (defaultOption) defaultOption.checked = true;
-                } else {
-                    deleteOptionsSection.style.display = 'none';
-                }
-            }
-
-            eventDeleteModal.classList.add('active');
-            eventDeletePasswordInput.focus();
+            openDetailModal(event, dateStr);
         });
 
         eventsContainer.appendChild(eventBadge);
@@ -279,9 +258,12 @@ function createDayElement(dayNum, dateStr, isOtherMonth, dayOfWeek, isToday = fa
 
     // Click to add event
     dayEl.addEventListener('click', () => {
+        currentDetailList = null; // Ensure we are in add mode, not edit
         selectedDate = dateStr;
         const [year, month, day] = dateStr.split('-').map(Number);
         eventDateDisplay.textContent = `${year}年${month}月${day}日`;
+        // Reset title to Register
+        if (eventModalTitle) eventModalTitle.textContent = '予定の登録';
         eventModal.classList.add('active');
         eventTitleInput.focus();
     });
@@ -691,7 +673,7 @@ if (bulletinForm) {
     bulletinForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const nameInput = document.getElementById('postName');
+        const nameInput = document.getElementById('postTitle');
         const messageInput = document.getElementById('postMessage');
         const passwordInput = document.getElementById('postPassword');
 
@@ -744,6 +726,18 @@ let eventToDeleteId = null;
 let eventToDeleteDate = null;
 let eventToDeleteRepeat = null;
 
+// Event Detail Modal Elements
+const eventDetailModal = document.getElementById('eventDetailModal');
+const closeEventDetailModalBtn = document.getElementById('closeEventDetailModalBtn');
+const detailDeleteBtn = document.getElementById('detailDeleteBtn');
+const detailEditBtn = document.getElementById('detailEditBtn');
+const detailDate = document.getElementById('detailDate');
+const detailTitle = document.getElementById('detailTitle');
+const detailRepeat = document.getElementById('detailRepeat');
+const detailRepeatGroup = document.getElementById('detailRepeatGroup');
+let currentDetailList = null; // Store current event object
+const eventModalTitle = document.getElementById('eventModalTitle');
+
 // Color picker functionality
 colorOptions.forEach(option => {
     option.addEventListener('click', () => {
@@ -757,11 +751,23 @@ function closeEventModal() {
     if (eventModal) eventModal.classList.remove('active');
     if (eventForm) eventForm.reset();
     selectedDate = null;
+    currentDetailList = null; // Reset edit target
     // Reset color picker to default
     colorOptions.forEach(o => o.classList.remove('selected'));
     const defaultColor = colorPicker ? colorPicker.querySelector('[data-color="#8b5cf6"]') : null;
     if (defaultColor) defaultColor.classList.add('selected');
     selectedColor = '#8b5cf6';
+    // Reset button text
+    const submitBtn = eventForm.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.textContent = '登録する';
+    // Reset title
+    if (eventModalTitle) eventModalTitle.textContent = '予定の登録';
+}
+
+function closeEventDetailModal() {
+    if (eventDetailModal) eventDetailModal.classList.remove('active');
+    // Do NOT clear currentDetailList here, as we need it for Edit transition
+    // It will be cleared when closing the Edit modal or opening a new Add modal
 }
 
 function closeEventDeleteModal() {
@@ -791,13 +797,107 @@ if (eventModal) {
     });
 }
 
-if (eventDeleteModal) {
-    eventDeleteModal.addEventListener('click', (e) => {
-        if (e.target === eventDeleteModal) {
-            closeEventDeleteModal();
-        }
+if (eventDetailModal) {
+    eventDetailModal.addEventListener('click', (e) => {
+        if (e.target === eventDetailModal) closeEventDetailModal();
     });
 }
+
+function openDetailModal(event, dateStr) {
+    currentDetailList = event; // Store event object
+
+    // Set content
+    const [year, month, day] = dateStr.split('-').map(Number);
+    detailDate.textContent = `${year}年${month}月${day}日`;
+    detailTitle.textContent = event.title;
+
+    // Show/hide repeat info
+    if (event.repeat && event.repeat !== 'none') {
+        const repeatLabels = { weekly: '毎週', monthly: '毎月', yearly: '毎年' };
+        detailRepeat.textContent = repeatLabels[event.repeat];
+        detailRepeatGroup.style.display = 'block';
+    } else {
+        detailRepeatGroup.style.display = 'none';
+    }
+
+    eventDetailModal.classList.add('active');
+}
+
+if (closeEventDetailModalBtn) closeEventDetailModalBtn.addEventListener('click', closeEventDetailModal);
+
+// Edit button handler
+if (detailEditBtn) {
+    detailEditBtn.addEventListener('click', () => {
+        if (!currentDetailList) return;
+        closeEventDetailModal();
+
+        // Populate form with event data
+        selectedDate = currentDetailList.date; // Original start date
+        // NOTE: If editing a repeating event instance, we are editing the rule.
+        // It's simpler to edit the original rule.
+
+        eventTitleInput.value = currentDetailList.title;
+        eventRepeatSelect.value = currentDetailList.repeat || 'none';
+        eventPasswordInput.value = currentDetailList.password || '';
+        if (eventExcludeCountdownCheckbox) {
+            eventExcludeCountdownCheckbox.checked = currentDetailList.excludeCountdown || false;
+        }
+
+        // Select color
+        colorOptions.forEach(o => o.classList.remove('selected'));
+        const colorOption = colorPicker ? colorPicker.querySelector(`[data-color="${currentDetailList.color}"]`) : null;
+        if (colorOption) {
+            colorOption.classList.add('selected');
+            selectedColor = currentDetailList.color;
+        } else {
+            selectedColor = currentDetailList.color || '#8b5cf6';
+        }
+
+        // Change submit button text
+        const submitBtn = eventForm.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.textContent = '更新する';
+
+        // Change title
+        if (eventModalTitle) eventModalTitle.textContent = '予定の更新';
+
+        eventModal.classList.add('active');
+    });
+}
+
+// Delete button handler - opens deletion modal
+if (detailDeleteBtn) {
+    detailDeleteBtn.addEventListener('click', () => {
+        if (!currentDetailList) return;
+
+        eventToDeleteId = currentDetailList.id;
+        eventToDeleteRepeat = currentDetailList.repeat;
+
+        // Extract date from detail text to know which instance we are deleting
+        const dateText = detailDate.textContent;
+        const match = dateText.match(/(\d+)年(\d+)月(\d+)日/);
+        if (match) {
+            eventToDeleteDate = `${match[1]}-${String(match[2]).padStart(2, '0')}-${String(match[3]).padStart(2, '0')}`;
+        }
+
+        closeEventDetailModal();
+
+        // Show/hide delete options
+        const deleteOptionsSection = document.getElementById('deleteOptionsSection');
+        if (deleteOptionsSection) {
+            if (eventToDeleteRepeat && eventToDeleteRepeat !== 'none') {
+                deleteOptionsSection.style.display = 'block';
+                const defaultOption = document.querySelector('input[name="deleteOption"][value="this"]');
+                if (defaultOption) defaultOption.checked = true;
+            } else {
+                deleteOptionsSection.style.display = 'none';
+            }
+        }
+
+        eventDeleteModal.classList.add('active');
+        eventDeletePasswordInput.focus();
+    });
+}
+
 
 // Event form submit
 if (eventForm) {
@@ -811,14 +911,28 @@ if (eventForm) {
 
         if (title && selectedDate) {
             try {
-                await addEvent({
-                    date: selectedDate,
-                    title: title,
-                    color: selectedColor,
-                    repeat: repeat,
-                    password: password,
-                    excludeCountdown: excludeCountdown
-                });
+                if (currentDetailList) {
+                    // Update existing event
+                    await updateEvent(currentDetailList.id, {
+                        ...currentDetailList, // keep existing data
+                        title: title,
+                        color: selectedColor,
+                        repeat: repeat,
+                        password: password,
+                        excludeCountdown: excludeCountdown,
+                        date: selectedDate // in case we allow date change in future logic
+                    });
+                } else {
+                    // Add new event
+                    await addEvent({
+                        date: selectedDate,
+                        title: title,
+                        color: selectedColor,
+                        repeat: repeat,
+                        password: password,
+                        excludeCountdown: excludeCountdown
+                    });
+                }
                 closeEventModal();
             } catch (error) {
                 console.error('Error:', error);
@@ -826,6 +940,20 @@ if (eventForm) {
             }
         }
     });
+}
+
+async function updateEvent(eventId, updateData) {
+    try {
+        const docRef = doc(db, "events", eventId);
+        // For repeating events, we currently update the main rule which affects all future instances.
+        // This is the desired "edit" behavior as per plan.
+
+        await updateDoc(docRef, updateData);
+        // Refresh is automatic via onSnapshot
+    } catch (error) {
+        console.error('Error updating event:', error);
+        throw error;
+    }
 }
 
 // Confirm event delete

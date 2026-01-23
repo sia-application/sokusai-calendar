@@ -686,6 +686,33 @@ body {
     color: var(--text-primary);
 }
 
+/* ===== Detail Modal ===== */
+.event-detail-modal {
+    max-width: 450px;
+}
+
+.detail-group {
+    margin-bottom: 20px;
+}
+
+.detail-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+.detail-value {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.detail-value.highlight-text {
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
 .btn-danger {
     background: linear-gradient(135deg, #ef4444, #dc2626);
     color: white;
@@ -841,9 +868,9 @@ body {
 }
 
 .tab-btn.active {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #e65c00, #f9a825);
     color: white;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(230, 92, 0, 0.4);
 }
 
 /* ===== Tab Content ===== */
