@@ -1,4 +1,21 @@
 // ===== State Management =====
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, getDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAEfG5xJyZ7ISgJZn1rIjBjxMlWTQzQru0",
+    authDomain: "sokusai-calendar.firebaseapp.com",
+    projectId: "sokusai-calendar",
+    storageBucket: "sokusai-calendar.firebasestorage.app",
+    messagingSenderId: "298806417570",
+    appId: "1:298806417570:web:bfab76d710109532af9ffb",
+    measurementId: "G-JTMXCWMDPC"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 let currentDate = new Date();
 
 // ===== マークする日付をここで設定 =====
@@ -207,17 +224,23 @@ async function downloadCalendarImage() {
 }
 
 // ===== Bulletin Board Functions =====
-function loadPosts() {
-    const posts = localStorage.getItem('sokusai_bulletin_posts');
-    return posts ? JSON.parse(posts) : [];
+
+function subscribeToPosts() {
+    const q = query(collection(db, "bulletin_boards"), orderBy("date", "desc"));
+
+    onSnapshot(q, (snapshot) => {
+        const posts = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        renderPosts(posts);
+    }, (error) => {
+        console.error("Error getting posts:", error);
+        bulletinPosts.innerHTML = '<div class="empty-state">読み込みエラーが発生しました。</div>';
+    });
 }
 
-function savePosts(posts) {
-    localStorage.setItem('sokusai_bulletin_posts', JSON.stringify(posts));
-}
-
-function renderPosts() {
-    const posts = loadPosts();
+function renderPosts(posts) {
     bulletinPosts.innerHTML = '';
 
     if (posts.length === 0) {
@@ -280,19 +303,21 @@ function createPostElement(post) {
 async function deletePost(postId) {
     const password = deletePasswordInput.value;
     try {
-        const response = await fetch(`${API_URL}/${postId}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password })
-        });
+        const docRef = doc(db, "bulletin_boards", postId);
+        const docSnap = await getDoc(docRef);
 
-        if (response.ok) {
-            renderPosts();
-            return true;
-        } else {
-            const data = await response.json();
-            throw new Error(data.error || '削除に失敗しました');
+        if (!docSnap.exists()) {
+            throw new Error('投稿が見つかりません');
         }
+
+        const postData = docSnap.data();
+        if (postData.password && postData.password !== password) {
+            throw new Error('Incorrect password');
+        }
+
+        await deleteDoc(docRef);
+        // renderPosts will be called automatically by onSnapshot
+        return true;
     } catch (error) {
         console.error('Error:', error);
         throw error;
@@ -382,10 +407,10 @@ if (confirmDeleteBtn) {
         if (!postToDeleteId) return;
 
         const password = deletePasswordInput.value;
-        if (!password) {
-            deleteError.textContent = 'パスワードを入力してください';
-            return;
-        }
+        // if (!password) {
+        //     deleteError.textContent = 'パスワードを入力してください';
+        //     return;
+        // }
 
         try {
             await deletePost(postToDeleteId);
@@ -425,30 +450,22 @@ if (bulletinForm) {
         const message = messageInput.value.trim();
         const password = passwordInput.value.trim();
 
-        if (name && message && password) {
+        if (name && message) {
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: Date.now(),
-                        name: name,
-                        message: message,
-                        password: password,
-                        date: new Date().toISOString()
-                    })
+                // Add to Firestore
+                await addDoc(collection(db, "bulletin_boards"), {
+                    name: name,
+                    message: message,
+                    password: password,
+                    date: new Date().toISOString() // Or serverTimestamp()
                 });
 
-                if (response.ok) {
-                    renderPosts();
-                    bulletinForm.reset();
-                    closePostModal();
-                } else {
-                    alert('投稿に失敗しました');
-                }
+                bulletinForm.reset();
+                closePostModal();
+                // renderPosts will be called automatically
             } catch (error) {
                 console.error('Error:', error);
-                alert('エラーが発生しました');
+                alert('エラーが発生しました: ' + error.message);
             }
         }
     });
@@ -457,4 +474,4 @@ if (bulletinForm) {
 // ===== Initialize =====
 renderCalendar();
 updateCountdown();
-renderPosts();
+subscribeToPosts();
