@@ -361,6 +361,13 @@ tabBtns.forEach(btn => {
         btn.classList.add('active');
         const tabId = btn.getAttribute('data-tab');
         document.getElementById(tabId).classList.add('active');
+
+        // Toggle FAB visibility
+        if (tabId === 'tab-bulletin') {
+            openPostModalBtn.style.display = 'flex';
+        } else {
+            openPostModalBtn.style.display = 'none';
+        }
     });
 });
 
