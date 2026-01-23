@@ -38,6 +38,10 @@ const prevMonthBtn = document.getElementById('prevMonth');
 const nextMonthBtn = document.getElementById('nextMonth');
 const downloadBtn = document.getElementById('downloadBtn');
 const countdownEl = document.getElementById('countdown');
+const tabBtns = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.tab-content');
+const bulletinForm = document.getElementById('bulletinForm');
+const bulletinPosts = document.getElementById('bulletinPosts');
 
 // ===== Countdown Function =====
 function updateCountdown() {
@@ -156,7 +160,7 @@ function createDayElement(dayNum, dateStr, isOtherMonth, dayOfWeek, isToday = fa
     // Check if this date is marked
     if (markedDates[dateStr]) {
         const markImg = document.createElement('img');
-        markImg.src = 'sokusai.jpg';
+        markImg.src = './sokusai.jpg';
         markImg.alt = '予定';
         markImg.className = 'date-mark';
         markContainer.appendChild(markImg);
@@ -202,6 +206,108 @@ async function downloadCalendarImage() {
     }
 }
 
+// ===== Bulletin Board Functions =====
+function loadPosts() {
+    const posts = localStorage.getItem('sokusai_bulletin_posts');
+    return posts ? JSON.parse(posts) : [];
+}
+
+function savePosts(posts) {
+    localStorage.setItem('sokusai_bulletin_posts', JSON.stringify(posts));
+}
+
+function renderPosts() {
+    const posts = loadPosts();
+    bulletinPosts.innerHTML = '';
+
+    if (posts.length === 0) {
+        bulletinPosts.innerHTML = '<div class="empty-state">まだ投稿はありません。</div>';
+        return;
+    }
+
+    // Render the latest post (first one)
+    const latestPost = posts[0];
+    bulletinPosts.appendChild(createPostElement(latestPost));
+
+    // If there are more posts, show "View Past Posts" button
+    if (posts.length > 1) {
+        const viewPastBtn = document.createElement('button');
+        viewPastBtn.className = 'view-past-btn';
+        viewPastBtn.textContent = '過去の投稿を見る';
+
+        viewPastBtn.addEventListener('click', () => {
+            // Render remaining posts
+            for (let i = 1; i < posts.length; i++) {
+                bulletinPosts.appendChild(createPostElement(posts[i]));
+            }
+            // Remove the button
+            viewPastBtn.remove();
+        });
+
+        bulletinPosts.appendChild(viewPastBtn);
+    }
+}
+
+function createPostElement(post) {
+    const date = new Date(post.date);
+    const dateStr = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+    const postCard = document.createElement('div');
+    postCard.className = 'post-card';
+    postCard.innerHTML = `
+        <div class="post-header">
+            <span class="post-author">${escapeHtml(post.name)}</span>
+            <div class="post-meta">
+                <span class="post-date">${dateStr}</span>
+                <button class="delete-post-btn" data-id="${post.id}" aria-label="削除">🗑️</button>
+            </div>
+        </div>
+        <div class="post-message">${escapeHtml(post.message)}</div>
+    `;
+
+    // Add delete event listener
+    const deleteBtn = postCard.querySelector('.delete-post-btn');
+    deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent bubbling if necessary
+        postToDeleteId = post.id;
+        deleteModal.classList.add('active');
+        deletePasswordInput.focus();
+    });
+
+    return postCard;
+}
+
+async function deletePost(postId) {
+    const password = deletePasswordInput.value;
+    try {
+        const response = await fetch(`${API_URL}/${postId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+
+        if (response.ok) {
+            renderPosts();
+            return true;
+        } else {
+            const data = await response.json();
+            throw new Error(data.error || '削除に失敗しました');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        throw error;
+    }
+}
+
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 // ===== Event Listeners =====
 prevMonthBtn.addEventListener('click', () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
@@ -219,6 +325,136 @@ downloadBtn.addEventListener('click', (e) => {
     downloadCalendarImage();
 });
 
+// ===== Tab Event Listeners =====
+tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        // Remove active class from all
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+
+        // Add active class to clicked
+        btn.classList.add('active');
+        const tabId = btn.getAttribute('data-tab');
+        document.getElementById(tabId).classList.add('active');
+    });
+});
+
+// ===== Bulletin Board Event Listeners =====
+const openPostModalBtn = document.getElementById('openPostModalBtn');
+const postModal = document.getElementById('postModal');
+const closePostModalBtn = document.getElementById('closePostModalBtn');
+const cancelPostBtn = document.getElementById('cancelPostBtn');
+
+// Delete Modal Elements
+const deleteModal = document.getElementById('deleteModal');
+const closeDeleteModalBtn = document.getElementById('closeDeleteModalBtn');
+const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+const deletePasswordInput = document.getElementById('deletePasswordInput');
+const deleteError = document.getElementById('deleteError');
+let postToDeleteId = null;
+
+if (openPostModalBtn) {
+    openPostModalBtn.addEventListener('click', () => {
+        postModal.classList.add('active');
+    });
+}
+
+function closePostModal() {
+    postModal.classList.remove('active');
+}
+
+function closeDeleteModal() {
+    deleteModal.classList.remove('active');
+    deletePasswordInput.value = '';
+    deleteError.textContent = '';
+    postToDeleteId = null;
+}
+
+if (closePostModalBtn) closePostModalBtn.addEventListener('click', closePostModal);
+if (cancelPostBtn) cancelPostBtn.addEventListener('click', closePostModal);
+
+if (closeDeleteModalBtn) closeDeleteModalBtn.addEventListener('click', closeDeleteModal);
+if (cancelDeleteBtn) cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+
+if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener('click', async () => {
+        if (!postToDeleteId) return;
+
+        const password = deletePasswordInput.value;
+        if (!password) {
+            deleteError.textContent = 'パスワードを入力してください';
+            return;
+        }
+
+        try {
+            await deletePost(postToDeleteId);
+            closeDeleteModal();
+        } catch (error) {
+            deleteError.textContent = error.message === 'Incorrect password' ? 'パスワードが間違っています' : '削除エラー';
+        }
+    });
+}
+
+// Close modal when clicking outside
+if (postModal) {
+    postModal.addEventListener('click', (e) => {
+        if (e.target === postModal) {
+            closePostModal();
+        }
+    });
+}
+
+if (deleteModal) {
+    deleteModal.addEventListener('click', (e) => {
+        if (e.target === deleteModal) {
+            closeDeleteModal();
+        }
+    });
+}
+
+if (bulletinForm) {
+    bulletinForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const nameInput = document.getElementById('postName');
+        const messageInput = document.getElementById('postMessage');
+        const passwordInput = document.getElementById('postPassword');
+
+        const name = nameInput.value.trim();
+        const message = messageInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (name && message && password) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: Date.now(),
+                        name: name,
+                        message: message,
+                        password: password,
+                        date: new Date().toISOString()
+                    })
+                });
+
+                if (response.ok) {
+                    renderPosts();
+                    bulletinForm.reset();
+                    closePostModal();
+                } else {
+                    alert('投稿に失敗しました');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('エラーが発生しました');
+            }
+        }
+    });
+}
+
 // ===== Initialize =====
 renderCalendar();
 updateCountdown();
+renderPosts();

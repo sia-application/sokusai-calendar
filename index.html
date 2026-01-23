@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>即採カレンダー</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -16,7 +16,7 @@
         <header class="header">
             <div class="title-container">
                 <h1>🗓️即採カレンダー</h1>
-                <a href="https://afroya.net/" target="_blank" rel="noopener noreferrer"><img src="sokusai.jpg"
+                <a href="https://afroya.net/" target="_blank" rel="noopener noreferrer"><img src="./sokusai.jpg"
                         alt="SOKUSAI" class="title-character"></a>
             </div>
             <div class="header-buttons">
@@ -28,30 +28,103 @@
             </div>
         </header>
 
-        <div class="calendar-wrapper">
-            <div class="calendar-controls">
-                <button id="prevMonth" class="nav-btn">
-                    <span>◀</span>
-                </button>
-                <h2 id="currentMonth" class="month-title"></h2>
-                <button id="nextMonth" class="nav-btn">
-                    <span>▶</span>
-                </button>
-            </div>
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="tab-calendar">カレンダー</button>
+            <button class="tab-btn" data-tab="tab-bulletin">掲示板</button>
+        </div>
 
-            <div id="calendar" class="calendar">
-                <div class="weekdays">
-                    <div class="weekday sun">日</div>
-                    <div class="weekday">月</div>
-                    <div class="weekday">火</div>
-                    <div class="weekday">水</div>
-                    <div class="weekday">木</div>
-                    <div class="weekday">金</div>
-                    <div class="weekday sat">土</div>
+        <div id="tab-calendar" class="tab-content active">
+            <div class="calendar-wrapper">
+                <div class="calendar-controls">
+                    <button id="prevMonth" class="nav-btn">
+                        <span>◀</span>
+                    </button>
+                    <h2 id="currentMonth" class="month-title"></h2>
+                    <button id="nextMonth" class="nav-btn">
+                        <span>▶</span>
+                    </button>
                 </div>
-                <div id="calendarDays" class="days"></div>
+
+                <div id="calendar" class="calendar">
+                    <div class="weekdays">
+                        <div class="weekday sun">日</div>
+                        <div class="weekday">月</div>
+                        <div class="weekday">火</div>
+                        <div class="weekday">水</div>
+                        <div class="weekday">木</div>
+                        <div class="weekday">金</div>
+                        <div class="weekday sat">土</div>
+                    </div>
+                    <div id="calendarDays" class="days"></div>
+                </div>
             </div>
         </div>
+
+        <div id="tab-bulletin" class="tab-content">
+            <div class="bulletin-wrapper">
+                <div class="bulletin-posts-container full-width">
+                    <div id="bulletinPosts" class="bulletin-posts">
+                        <!-- Posts will be rendered here -->
+                        <div class="empty-state">まだ投稿はありません。</div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="openPostModalBtn" class="fab-btn">
+                <span>✏️</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Post Modal -->
+    <div id="postModal" class="modal">
+        <div class="modal-content bulletin-modal">
+            <div class="modal-header">
+                <h3>新規投稿</h3>
+                <button class="close-btn" id="closePostModalBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="bulletinForm" class="bulletin-form">
+                    <div class="form-group">
+                        <label for="postName">お名前</label>
+                        <input type="text" id="postName" placeholder="お名前を入力" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="postMessage">メッセージ</label>
+                        <textarea id="postMessage" placeholder="メッセージを入力" required rows="5"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="postPassword">削除用パスワード</label>
+                        <input type="text" id="postPassword" placeholder="4桁の数字（削除時に必要）" required pattern="\d{4}"
+                            maxlength="4">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-cancel" id="cancelPostBtn">キャンセル</button>
+                        <button type="submit" class="btn btn-primary">投稿する</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Password Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content password-modal">
+            <div class="modal-header">
+                <h3>投稿の削除</h3>
+                <button class="close-btn" id="closeDeleteModalBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <p>削除用パスワードを入力してください</p>
+                <input type="text" id="deletePasswordInput" class="password-input" maxlength="4" placeholder="••••">
+                <div id="deleteError" class="password-error"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-cancel" id="cancelDeleteBtn">キャンセル</button>
+                    <button class="btn btn-danger" id="confirmDeleteBtn">削除する</button>
+                </div>
+            </div>
+        </div>
+    </div>
     </div>
 
     <footer class="site-footer">
