@@ -139,7 +139,11 @@ function updateCountdown() {
         const diffTime = nextEvent.dateObj - today;
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-        countdownEl.textContent = `${nextEvent.title}まで残り ${diffDays} 日`;
+        if (futureEvents.length > 1) {
+            countdownEl.textContent = `次の予定まで残り ${diffDays} 日`;
+        } else {
+            countdownEl.textContent = `${nextEvent.title}まで残り ${diffDays} 日`;
+        }
     } else {
         countdownEl.textContent = '予定なし';
     }
