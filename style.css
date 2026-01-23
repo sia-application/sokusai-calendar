@@ -1092,3 +1092,128 @@ body {
     margin-bottom: 16px;
     height: 20px;
 }
+
+/* ===== Event Modal Styles ===== */
+.event-modal {
+    max-width: 480px;
+}
+
+.event-date-display {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    border-radius: var(--radius-sm);
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* ===== Form Select ===== */
+.form-select {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23718096' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 01.753 1.659l-4.796 5.48a1 1 0 01-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+/* ===== Color Picker Enhancement ===== */
+.color-picker {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 8px 0;
+}
+
+.color-option {
+    width: 40px;
+    height: 40px;
+    border: 3px solid transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.color-option:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.color-option.selected {
+    border-color: var(--text-primary);
+    transform: scale(1.1);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5), 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* ===== Calendar Event Badge ===== */
+.events-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+    overflow: hidden;
+}
+
+.event-badge {
+    font-size: 0.65rem;
+    padding: 2px 4px;
+    border-radius: 3px;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: var(--transition);
+    font-weight: 500;
+}
+
+.event-badge:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
+}
+
+.more-events {
+    font-size: 0.6rem;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 2px 0;
+}
+
+/* ===== Repeat Badge ===== */
+.repeat-badge {
+    font-size: 0.5rem;
+    background: rgba(255, 255, 255, 0.3);
+    padding: 1px 3px;
+    border-radius: 2px;
+    margin-left: 3px;
+}
+
+@media (max-width: 600px) {
+    .event-badge {
+        font-size: 0.55rem;
+        padding: 1px 3px;
+    }
+
+    .color-option {
+        width: 32px;
+        height: 32px;
+    }
+}

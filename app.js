@@ -60,6 +60,11 @@ const tabContents = document.querySelectorAll('.tab-content');
 const bulletinForm = document.getElementById('bulletinForm');
 const bulletinPosts = document.getElementById('bulletinPosts');
 
+// Events state
+let events = [];
+let selectedDate = null;
+let selectedColor = '#8b5cf6';
+
 // ===== Countdown Function =====
 function updateCountdown() {
     const today = new Date();
@@ -170,7 +175,7 @@ function createDayElement(dayNum, dateStr, isOtherMonth, dayOfWeek, isToday = fa
     dayNumber.textContent = dayNum;
     dayEl.appendChild(dayNumber);
 
-    // Mark container
+    // Mark container (existing functionality)
     const markContainer = document.createElement('div');
     markContainer.className = 'mark-container';
 
@@ -185,6 +190,56 @@ function createDayElement(dayNum, dateStr, isOtherMonth, dayOfWeek, isToday = fa
     }
 
     dayEl.appendChild(markContainer);
+
+    // Events container
+    const eventsContainer = document.createElement('div');
+    eventsContainer.className = 'events-container';
+
+    // Get events for this date
+    const dateEvents = getEventsForDate(dateStr);
+    const maxEventsToShow = 2;
+
+    dateEvents.slice(0, maxEventsToShow).forEach(event => {
+        const eventBadge = document.createElement('div');
+        eventBadge.className = 'event-badge';
+        eventBadge.style.backgroundColor = event.color || '#8b5cf6';
+
+        let badgeContent = escapeHtml(event.title);
+        if (event.repeat && event.repeat !== 'none') {
+            const repeatLabels = { weekly: '週', monthly: '月', yearly: '年' };
+            badgeContent += `<span class="repeat-badge">${repeatLabels[event.repeat]}</span>`;
+        }
+        eventBadge.innerHTML = badgeContent;
+
+        // Click to delete event
+        eventBadge.addEventListener('click', (e) => {
+            e.stopPropagation();
+            eventToDeleteId = event.id;
+            eventDeleteModal.classList.add('active');
+            eventDeletePasswordInput.focus();
+        });
+
+        eventsContainer.appendChild(eventBadge);
+    });
+
+    // Show "+X more" if there are more events
+    if (dateEvents.length > maxEventsToShow) {
+        const moreEvents = document.createElement('div');
+        moreEvents.className = 'more-events';
+        moreEvents.textContent = `+${dateEvents.length - maxEventsToShow}`;
+        eventsContainer.appendChild(moreEvents);
+    }
+
+    dayEl.appendChild(eventsContainer);
+
+    // Click to add event
+    dayEl.addEventListener('click', () => {
+        selectedDate = dateStr;
+        const [year, month, day] = dateStr.split('-').map(Number);
+        eventDateDisplay.textContent = `${year}年${month}月${day}日`;
+        eventModal.classList.add('active');
+        eventTitleInput.focus();
+    });
 
     return dayEl;
 }
@@ -333,6 +388,86 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
+// ===== Event Management Functions =====
+
+function subscribeToEvents() {
+    const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
+
+    onSnapshot(q, (snapshot) => {
+        events = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        renderCalendar();
+    }, (error) => {
+        console.error("Error getting events:", error);
+    });
+}
+
+function getEventsForDate(dateStr) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const targetDate = new Date(year, month - 1, day);
+    const dayOfWeek = targetDate.getDay();
+
+    return events.filter(event => {
+        const [eventYear, eventMonth, eventDay] = event.date.split('-').map(Number);
+        const eventDate = new Date(eventYear, eventMonth - 1, eventDay);
+
+        // Exact match
+        if (event.date === dateStr) return true;
+
+        // Check repeat rules
+        switch (event.repeat) {
+            case 'weekly':
+                // Same day of week and after or on the original date
+                return eventDate.getDay() === dayOfWeek && targetDate >= eventDate;
+            case 'monthly':
+                // Same day of month and after or on the original date
+                return eventDay === day && targetDate >= eventDate;
+            case 'yearly':
+                // Same month and day and after or on the original date
+                return eventMonth === month && eventDay === day && targetDate >= eventDate;
+            default:
+                return false;
+        }
+    });
+}
+
+async function addEvent(eventData) {
+    try {
+        await addDoc(collection(db, "events"), {
+            ...eventData,
+            createdAt: serverTimestamp()
+        });
+        return true;
+    } catch (error) {
+        console.error('Error adding event:', error);
+        throw error;
+    }
+}
+
+async function deleteEventById(eventId, password) {
+    try {
+        const docRef = doc(db, "events", eventId);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            throw new Error('予定が見つかりません');
+        }
+
+        const eventData = docSnap.data();
+        if (eventData.password && eventData.password !== password) {
+            throw new Error('Incorrect password');
+        }
+
+        await deleteDoc(docRef);
+        return true;
+    } catch (error) {
+        console.error('Error:', error);
+        throw error;
+    }
+}
+
 // ===== Event Listeners =====
 prevMonthBtn.addEventListener('click', () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
@@ -478,7 +613,122 @@ if (bulletinForm) {
     });
 }
 
+// ===== Event Modal Elements =====
+const eventModal = document.getElementById('eventModal');
+const closeEventModalBtn = document.getElementById('closeEventModalBtn');
+const cancelEventBtn = document.getElementById('cancelEventBtn');
+const eventForm = document.getElementById('eventForm');
+const eventDateDisplay = document.getElementById('eventDateDisplay');
+const eventTitleInput = document.getElementById('eventTitle');
+const eventRepeatSelect = document.getElementById('eventRepeat');
+const eventPasswordInput = document.getElementById('eventPassword');
+const colorPicker = document.getElementById('colorPicker');
+const colorOptions = colorPicker ? colorPicker.querySelectorAll('.color-option') : [];
+
+// Event Delete Modal Elements
+const eventDeleteModal = document.getElementById('eventDeleteModal');
+const closeEventDeleteModalBtn = document.getElementById('closeEventDeleteModalBtn');
+const cancelEventDeleteBtn = document.getElementById('cancelEventDeleteBtn');
+const confirmEventDeleteBtn = document.getElementById('confirmEventDeleteBtn');
+const eventDeletePasswordInput = document.getElementById('eventDeletePasswordInput');
+const eventDeleteError = document.getElementById('eventDeleteError');
+let eventToDeleteId = null;
+
+// Color picker functionality
+colorOptions.forEach(option => {
+    option.addEventListener('click', () => {
+        colorOptions.forEach(o => o.classList.remove('selected'));
+        option.classList.add('selected');
+        selectedColor = option.dataset.color;
+    });
+});
+
+function closeEventModal() {
+    if (eventModal) eventModal.classList.remove('active');
+    if (eventForm) eventForm.reset();
+    selectedDate = null;
+    // Reset color picker to default
+    colorOptions.forEach(o => o.classList.remove('selected'));
+    const defaultColor = colorPicker ? colorPicker.querySelector('[data-color="#8b5cf6"]') : null;
+    if (defaultColor) defaultColor.classList.add('selected');
+    selectedColor = '#8b5cf6';
+}
+
+function closeEventDeleteModal() {
+    if (eventDeleteModal) eventDeleteModal.classList.remove('active');
+    if (eventDeletePasswordInput) eventDeletePasswordInput.value = '';
+    if (eventDeleteError) eventDeleteError.textContent = '';
+    eventToDeleteId = null;
+}
+
+if (closeEventModalBtn) closeEventModalBtn.addEventListener('click', closeEventModal);
+if (cancelEventBtn) cancelEventBtn.addEventListener('click', closeEventModal);
+
+if (closeEventDeleteModalBtn) closeEventDeleteModalBtn.addEventListener('click', closeEventDeleteModal);
+if (cancelEventDeleteBtn) cancelEventDeleteBtn.addEventListener('click', closeEventDeleteModal);
+
+// Close modals when clicking outside
+if (eventModal) {
+    eventModal.addEventListener('click', (e) => {
+        if (e.target === eventModal) {
+            closeEventModal();
+        }
+    });
+}
+
+if (eventDeleteModal) {
+    eventDeleteModal.addEventListener('click', (e) => {
+        if (e.target === eventDeleteModal) {
+            closeEventDeleteModal();
+        }
+    });
+}
+
+// Event form submit
+if (eventForm) {
+    eventForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const title = eventTitleInput.value.trim();
+        const repeat = eventRepeatSelect.value;
+        const password = eventPasswordInput.value.trim();
+
+        if (title && selectedDate) {
+            try {
+                await addEvent({
+                    date: selectedDate,
+                    title: title,
+                    color: selectedColor,
+                    repeat: repeat,
+                    password: password
+                });
+                closeEventModal();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('エラーが発生しました: ' + error.message);
+            }
+        }
+    });
+}
+
+// Confirm event delete
+if (confirmEventDeleteBtn) {
+    confirmEventDeleteBtn.addEventListener('click', async () => {
+        if (!eventToDeleteId) return;
+
+        const password = eventDeletePasswordInput.value;
+
+        try {
+            await deleteEventById(eventToDeleteId, password);
+            closeEventDeleteModal();
+        } catch (error) {
+            eventDeleteError.textContent = error.message === 'Incorrect password' ? 'パスワードが間違っています' : '削除エラー';
+        }
+    });
+}
+
 // ===== Initialize =====
 renderCalendar();
 updateCountdown();
 subscribeToPosts();
+subscribeToEvents();

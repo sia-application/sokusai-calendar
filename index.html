@@ -124,6 +124,73 @@
             </div>
         </div>
     </div>
+
+    <!-- Event Modal -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content event-modal">
+            <div class="modal-header">
+                <h3>予定の登録</h3>
+                <button class="close-btn" id="closeEventModalBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="event-date-display" id="eventDateDisplay"></div>
+                <form id="eventForm">
+                    <div class="form-group">
+                        <label for="eventTitle">予定タイトル</label>
+                        <input type="text" id="eventTitle" placeholder="予定を入力" required>
+                    </div>
+                    <div class="form-group">
+                        <label>色</label>
+                        <div class="color-picker" id="colorPicker">
+                            <div class="color-option" data-color="#ef4444" style="background: #ef4444;"></div>
+                            <div class="color-option" data-color="#f97316" style="background: #f97316;"></div>
+                            <div class="color-option" data-color="#eab308" style="background: #eab308;"></div>
+                            <div class="color-option" data-color="#22c55e" style="background: #22c55e;"></div>
+                            <div class="color-option" data-color="#3b82f6" style="background: #3b82f6;"></div>
+                            <div class="color-option selected" data-color="#8b5cf6" style="background: #8b5cf6;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventRepeat">繰り返し</label>
+                        <select id="eventRepeat" class="form-select">
+                            <option value="none">繰り返さない</option>
+                            <option value="weekly">毎週</option>
+                            <option value="monthly">毎月</option>
+                            <option value="yearly">毎年</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="eventPassword">削除用パスワード</label>
+                        <input type="text" id="eventPassword" placeholder="パスワード（任意）" maxlength="4">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-cancel" id="cancelEventBtn">キャンセル</button>
+                        <button type="submit" class="btn btn-primary">登録する</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Delete Modal -->
+    <div id="eventDeleteModal" class="modal">
+        <div class="modal-content password-modal">
+            <div class="modal-header">
+                <h3>予定の削除</h3>
+                <button class="close-btn" id="closeEventDeleteModalBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <p>削除用パスワードを入力してください</p>
+                <input type="text" id="eventDeletePasswordInput" class="password-input" maxlength="4"
+                    placeholder="••••">
+                <div id="eventDeleteError" class="password-error"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-cancel" id="cancelEventDeleteBtn">キャンセル</button>
+                    <button class="btn btn-danger" id="confirmEventDeleteBtn">削除する</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <footer class="site-footer">
