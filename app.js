@@ -43,17 +43,54 @@ function updateCountdown() {
     today.setHours(0, 0, 0, 0);
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    // Get all unique event dates with their titles (not repeating events for simplicity)
-    const upcomingEvents = events
-        .filter(event => event.date >= todayStr && event.repeat === 'none')
-        .map(event => ({
-            date: event.date,
-            title: event.title
-        }))
-        .sort((a, b) => a.date.localeCompare(b.date));
+    // Calculate next occurrence for each event (including repeating ones)
+    const upcomingEvents = [];
 
-    // Also check repeating events for today and upcoming
-    const allEventsForToday = getEventsForDate(todayStr);
+    events.filter(event => !event.excludeCountdown).forEach(event => {
+        const [eventYear, eventMonth, eventDay] = event.date.split('-').map(Number);
+        const eventDate = new Date(eventYear, eventMonth - 1, eventDay);
+
+        if (event.repeat === 'none') {
+            // One-time event - include if in future
+            if (event.date >= todayStr) {
+                upcomingEvents.push({
+                    date: event.date,
+                    title: event.title,
+                    dateObj: eventDate
+                });
+            }
+        } else {
+            // Repeating event - find next occurrence
+            let nextOccurrence = new Date(eventDate);
+
+            while (nextOccurrence < today) {
+                switch (event.repeat) {
+                    case 'weekly':
+                        nextOccurrence.setDate(nextOccurrence.getDate() + 7);
+                        break;
+                    case 'monthly':
+                        nextOccurrence.setMonth(nextOccurrence.getMonth() + 1);
+                        break;
+                    case 'yearly':
+                        nextOccurrence.setFullYear(nextOccurrence.getFullYear() + 1);
+                        break;
+                }
+            }
+
+            const nextDateStr = `${nextOccurrence.getFullYear()}-${String(nextOccurrence.getMonth() + 1).padStart(2, '0')}-${String(nextOccurrence.getDate()).padStart(2, '0')}`;
+            upcomingEvents.push({
+                date: nextDateStr,
+                title: event.title,
+                dateObj: nextOccurrence
+            });
+        }
+    });
+
+    // Sort by date
+    upcomingEvents.sort((a, b) => a.dateObj - b.dateObj);
+
+    // Check for today's events (excluding those marked as excludeCountdown)
+    const allEventsForToday = getEventsForDate(todayStr).filter(event => !event.excludeCountdown);
 
     if (allEventsForToday.length > 0) {
         // Today has an event
@@ -61,11 +98,12 @@ function updateCountdown() {
         return;
     }
 
-    if (upcomingEvents.length > 0) {
-        const nextEvent = upcomingEvents[0];
-        const [year, month, day] = nextEvent.date.split('-').map(Number);
-        const eventDate = new Date(year, month - 1, day);
-        const diffTime = eventDate - today;
+    // Find first future event (not today)
+    const futureEvents = upcomingEvents.filter(e => e.date > todayStr);
+
+    if (futureEvents.length > 0) {
+        const nextEvent = futureEvents[0];
+        const diffTime = nextEvent.dateObj - today;
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
         countdownEl.textContent = `${nextEvent.title}まで残り ${diffDays} 日`;
@@ -581,6 +619,7 @@ const eventDateDisplay = document.getElementById('eventDateDisplay');
 const eventTitleInput = document.getElementById('eventTitle');
 const eventRepeatSelect = document.getElementById('eventRepeat');
 const eventPasswordInput = document.getElementById('eventPassword');
+const eventExcludeCountdownCheckbox = document.getElementById('eventExcludeCountdown');
 const colorPicker = document.getElementById('colorPicker');
 const colorOptions = colorPicker ? colorPicker.querySelectorAll('.color-option') : [];
 
@@ -651,6 +690,7 @@ if (eventForm) {
         const title = eventTitleInput.value.trim();
         const repeat = eventRepeatSelect.value;
         const password = eventPasswordInput.value.trim();
+        const excludeCountdown = eventExcludeCountdownCheckbox ? eventExcludeCountdownCheckbox.checked : false;
 
         if (title && selectedDate) {
             try {
@@ -659,7 +699,8 @@ if (eventForm) {
                     title: title,
                     color: selectedColor,
                     repeat: repeat,
-                    password: password
+                    password: password,
+                    excludeCountdown: excludeCountdown
                 });
                 closeEventModal();
             } catch (error) {
