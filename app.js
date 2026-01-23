@@ -1,6 +1,6 @@
 // ===== State Management =====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, getDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, getDoc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAEfG5xJyZ7ISgJZn1rIjBjxMlWTQzQru0",
@@ -49,10 +49,11 @@ function updateCountdown() {
     events.filter(event => !event.excludeCountdown).forEach(event => {
         const [eventYear, eventMonth, eventDay] = event.date.split('-').map(Number);
         const eventDate = new Date(eventYear, eventMonth - 1, eventDay);
+        const exceptions = event.exceptions || [];
 
         if (event.repeat === 'none') {
-            // One-time event - include if in future
-            if (event.date >= todayStr) {
+            // One-time event - include if in future and not in exceptions
+            if (event.date >= todayStr && !exceptions.includes(event.date)) {
                 upcomingEvents.push({
                     date: event.date,
                     title: event.title,
@@ -60,29 +61,61 @@ function updateCountdown() {
                 });
             }
         } else {
-            // Repeating event - find next occurrence
+            // Repeating event - find next valid occurrence
             let nextOccurrence = new Date(eventDate);
+            let maxIterations = 365; // Prevent infinite loops
+            let found = false;
 
-            while (nextOccurrence < today) {
-                switch (event.repeat) {
-                    case 'weekly':
-                        nextOccurrence.setDate(nextOccurrence.getDate() + 7);
-                        break;
-                    case 'monthly':
-                        nextOccurrence.setMonth(nextOccurrence.getMonth() + 1);
-                        break;
-                    case 'yearly':
-                        nextOccurrence.setFullYear(nextOccurrence.getFullYear() + 1);
-                        break;
+            while (maxIterations > 0) {
+                // Move to next occurrence if in the past
+                while (nextOccurrence < today) {
+                    switch (event.repeat) {
+                        case 'weekly':
+                            nextOccurrence.setDate(nextOccurrence.getDate() + 7);
+                            break;
+                        case 'monthly':
+                            nextOccurrence.setMonth(nextOccurrence.getMonth() + 1);
+                            break;
+                        case 'yearly':
+                            nextOccurrence.setFullYear(nextOccurrence.getFullYear() + 1);
+                            break;
+                    }
                 }
-            }
 
-            const nextDateStr = `${nextOccurrence.getFullYear()}-${String(nextOccurrence.getMonth() + 1).padStart(2, '0')}-${String(nextOccurrence.getDate()).padStart(2, '0')}`;
-            upcomingEvents.push({
-                date: nextDateStr,
-                title: event.title,
-                dateObj: nextOccurrence
-            });
+                const nextDateStr = `${nextOccurrence.getFullYear()}-${String(nextOccurrence.getMonth() + 1).padStart(2, '0')}-${String(nextOccurrence.getDate()).padStart(2, '0')}`;
+
+                // Check if this occurrence is past the endDate
+                if (event.endDate && nextDateStr > event.endDate) {
+                    break; // No more valid occurrences
+                }
+
+                // Check if this occurrence is in exceptions
+                if (exceptions.includes(nextDateStr)) {
+                    // Skip this date, find next one
+                    switch (event.repeat) {
+                        case 'weekly':
+                            nextOccurrence.setDate(nextOccurrence.getDate() + 7);
+                            break;
+                        case 'monthly':
+                            nextOccurrence.setMonth(nextOccurrence.getMonth() + 1);
+                            break;
+                        case 'yearly':
+                            nextOccurrence.setFullYear(nextOccurrence.getFullYear() + 1);
+                            break;
+                    }
+                    maxIterations--;
+                    continue;
+                }
+
+                // Valid occurrence found
+                upcomingEvents.push({
+                    date: nextDateStr,
+                    title: event.title,
+                    dateObj: new Date(nextOccurrence)
+                });
+                found = true;
+                break;
+            }
         }
     });
 
@@ -211,6 +244,22 @@ function createDayElement(dayNum, dateStr, isOtherMonth, dayOfWeek, isToday = fa
         eventBadge.addEventListener('click', (e) => {
             e.stopPropagation();
             eventToDeleteId = event.id;
+            eventToDeleteDate = dateStr;
+            eventToDeleteRepeat = event.repeat;
+
+            // Show/hide delete options based on whether it's a repeating event
+            const deleteOptionsSection = document.getElementById('deleteOptionsSection');
+            if (deleteOptionsSection) {
+                if (event.repeat && event.repeat !== 'none') {
+                    deleteOptionsSection.style.display = 'block';
+                    // Reset to default option
+                    const defaultOption = document.querySelector('input[name="deleteOption"][value="this"]');
+                    if (defaultOption) defaultOption.checked = true;
+                } else {
+                    deleteOptionsSection.style.display = 'none';
+                }
+            }
+
             eventDeleteModal.classList.add('active');
             eventDeletePasswordInput.focus();
         });
@@ -407,6 +456,16 @@ function getEventsForDate(dateStr) {
     const dayOfWeek = targetDate.getDay();
 
     return events.filter(event => {
+        // Check if this date is in the exceptions list
+        if (event.exceptions && event.exceptions.includes(dateStr)) {
+            return false;
+        }
+
+        // Check if event has ended (for "delete future" option)
+        if (event.endDate && dateStr > event.endDate) {
+            return false;
+        }
+
         const [eventYear, eventMonth, eventDay] = event.date.split('-').map(Number);
         const eventDate = new Date(eventYear, eventMonth - 1, eventDay);
 
@@ -458,6 +517,57 @@ async function deleteEventById(eventId, password) {
         }
 
         await deleteDoc(docRef);
+        return true;
+    } catch (error) {
+        console.error('Error:', error);
+        throw error;
+    }
+}
+
+async function deleteEventWithOption(eventId, password, option, clickedDate) {
+    try {
+        const docRef = doc(db, "events", eventId);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            throw new Error('予定が見つかりません');
+        }
+
+        const eventData = docSnap.data();
+        if (eventData.password && eventData.password !== password) {
+            throw new Error('Incorrect password');
+        }
+
+        switch (option) {
+            case 'this':
+                // Add clicked date to exceptions list
+                const exceptions = eventData.exceptions || [];
+                if (!exceptions.includes(clickedDate)) {
+                    exceptions.push(clickedDate);
+                }
+                await updateDoc(docRef, { exceptions: exceptions });
+                break;
+
+            case 'future':
+                // If clicked date is the original date, delete the whole event
+                if (clickedDate === eventData.date) {
+                    await deleteDoc(docRef);
+                } else {
+                    // Set end date to day before clicked date
+                    const [year, month, day] = clickedDate.split('-').map(Number);
+                    const endDate = new Date(year, month - 1, day - 1);
+                    const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+                    await updateDoc(docRef, { endDate: endDateStr });
+                }
+                break;
+
+            case 'all':
+            default:
+                // Delete the entire event
+                await deleteDoc(docRef);
+                break;
+        }
+
         return true;
     } catch (error) {
         console.error('Error:', error);
@@ -631,6 +741,8 @@ const confirmEventDeleteBtn = document.getElementById('confirmEventDeleteBtn');
 const eventDeletePasswordInput = document.getElementById('eventDeletePasswordInput');
 const eventDeleteError = document.getElementById('eventDeleteError');
 let eventToDeleteId = null;
+let eventToDeleteDate = null;
+let eventToDeleteRepeat = null;
 
 // Color picker functionality
 colorOptions.forEach(option => {
@@ -657,6 +769,11 @@ function closeEventDeleteModal() {
     if (eventDeletePasswordInput) eventDeletePasswordInput.value = '';
     if (eventDeleteError) eventDeleteError.textContent = '';
     eventToDeleteId = null;
+    eventToDeleteDate = null;
+    eventToDeleteRepeat = null;
+    // Hide delete options
+    const deleteOptionsSection = document.getElementById('deleteOptionsSection');
+    if (deleteOptionsSection) deleteOptionsSection.style.display = 'none';
 }
 
 if (closeEventModalBtn) closeEventModalBtn.addEventListener('click', closeEventModal);
@@ -718,8 +835,15 @@ if (confirmEventDeleteBtn) {
 
         const password = eventDeletePasswordInput.value;
 
+        // Get selected delete option
+        let deleteOption = 'all';
+        if (eventToDeleteRepeat && eventToDeleteRepeat !== 'none') {
+            const selectedOption = document.querySelector('input[name="deleteOption"]:checked');
+            deleteOption = selectedOption ? selectedOption.value : 'all';
+        }
+
         try {
-            await deleteEventById(eventToDeleteId, password);
+            await deleteEventWithOption(eventToDeleteId, password, deleteOption, eventToDeleteDate);
             closeEventDeleteModal();
         } catch (error) {
             eventDeleteError.textContent = error.message === 'Incorrect password' ? 'パスワードが間違っています' : '削除エラー';

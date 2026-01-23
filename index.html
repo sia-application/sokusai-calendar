@@ -181,12 +181,29 @@
 
     <!-- Event Delete Modal -->
     <div id="eventDeleteModal" class="modal">
-        <div class="modal-content password-modal">
+        <div class="modal-content password-modal delete-options-modal">
             <div class="modal-header">
                 <h3>予定の削除</h3>
                 <button class="close-btn" id="closeEventDeleteModalBtn">×</button>
             </div>
             <div class="modal-body">
+                <div id="deleteOptionsSection" class="delete-options" style="display: none;">
+                    <p class="delete-options-label">削除する範囲を選択してください</p>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="deleteOption" value="this" checked>
+                            <span>この予定のみ</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="deleteOption" value="future">
+                            <span>これ以降の全ての予定</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="deleteOption" value="all">
+                            <span>全ての予定</span>
+                        </label>
+                    </div>
+                </div>
                 <p>削除用パスワードを入力してください</p>
                 <input type="text" id="eventDeletePasswordInput" class="password-input" maxlength="4"
                     placeholder="••••">
