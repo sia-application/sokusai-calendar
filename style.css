@@ -786,14 +786,27 @@ body {
     }
 
     .day {
-        min-height: auto;
-        padding: 4px;
-        aspect-ratio: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 2px;
+        aspect-ratio: 0.75;
         overflow: hidden;
+        min-height: auto;
     }
 
     .day-number {
         font-size: 0.7rem;
+        margin-bottom: 2px;
+        line-height: 1;
+        text-align: left;
+        padding-left: 2px;
+    }
+
+    .events-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        margin-top: 0;
     }
 
     .event {
@@ -829,14 +842,21 @@ body {
     .day {
         min-height: 40px;
         padding: 2px;
+        aspect-ratio: 0.75;
+        display: flex;
+        flex-direction: column;
     }
 
     .day-number {
         font-size: 0.65rem;
+        margin-bottom: 1px;
     }
 
     .events-container {
-        display: none;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        margin-top: 0;
     }
 }
 
