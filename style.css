@@ -787,10 +787,9 @@ body {
 
     .day {
         min-height: auto;
-        /* Remove fixed min-height to allow aspect-ratio to control height */
         padding: 4px;
         aspect-ratio: 1;
-        /* Force square aspect ratio */
+        overflow: hidden;
     }
 
     .day-number {
