@@ -126,23 +126,30 @@ function updateCountdown() {
     const allEventsForToday = getEventsForDate(todayStr).filter(event => !event.excludeCountdown);
 
     if (allEventsForToday.length > 0) {
-        // Today has an event
-        countdownEl.textContent = `${allEventsForToday[0].title} 当日！`;
+        // Today has events
+        if (allEventsForToday.length > 1) {
+            countdownEl.textContent = `今日の予定：次まで当日！`;
+        } else {
+            countdownEl.textContent = `${allEventsForToday[0].title} 当日！`;
+        }
         return;
     }
 
-    // Find first future event (not today)
+    // Find closest future events
     const futureEvents = upcomingEvents.filter(e => e.date > todayStr);
 
     if (futureEvents.length > 0) {
-        const nextEvent = futureEvents[0];
-        const diffTime = nextEvent.dateObj - today;
+        // Group by the closest date
+        const nextDate = futureEvents[0].date;
+        const eventsOnNextDate = futureEvents.filter(e => e.date === nextDate);
+
+        const diffTime = eventsOnNextDate[0].dateObj - today;
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-        if (futureEvents.length > 1) {
+        if (eventsOnNextDate.length > 1) {
             countdownEl.textContent = `次の予定まで残り ${diffDays} 日`;
         } else {
-            countdownEl.textContent = `${nextEvent.title}まで残り ${diffDays} 日`;
+            countdownEl.textContent = `${eventsOnNextDate[0].title}まで残り ${diffDays} 日`;
         }
     } else {
         countdownEl.textContent = '予定なし';
