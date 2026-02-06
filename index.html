@@ -171,10 +171,20 @@
             </div>
             <div class="modal-body">
                 <form id="videoForm" class="bulletin-form">
-                    <input type="hidden" id="videoTitle">
                     <div class="form-group">
                         <label for="videoUrl">動画URL</label>
-                        <input type="url" id="videoUrl" placeholder="https://..." required>
+                        <div class="input-with-button">
+                            <input type="url" id="videoUrl" placeholder="https://..." required>
+                            <button type="button" id="fetchVideoInfoBtn" class="btn-icon" aria-label="情報取得">⬇︎</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="videoTitle">動画タイトル</label>
+                        <input type="text" id="videoTitle" placeholder="タイトル" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="videoAuthor">チャンネル名</label>
+                        <input type="text" id="videoAuthor" placeholder="チャンネル名" required>
                     </div>
                     <div class="form-group">
                         <label for="videoCategory">カテゴリー</label>
@@ -186,7 +196,6 @@
                                 aria-label="カテゴリー追加">＋</button>
                         </div>
                     </div>
-                    <input type="hidden" id="videoAuthor">
                     <input type="hidden" id="videoAuthorUrl">
                     <div class="form-group">
                         <label for="videoPassword">削除用パスワード</label>

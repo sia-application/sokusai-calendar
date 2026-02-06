@@ -1431,54 +1431,60 @@ if (openVideoModalBtn) {
     });
 }
 
-// Auto-fetch metadata on URL change
+// Fetch Video Metadata Logic
 const videoUrlInput = document.getElementById('videoUrl');
 const videoTitleInput = document.getElementById('videoTitle');
 const videoAuthorInput = document.getElementById('videoAuthor');
 const videoAuthorUrlInput = document.getElementById('videoAuthorUrl');
+const fetchVideoInfoBtn = document.getElementById('fetchVideoInfoBtn');
 
-if (videoUrlInput) {
-    videoUrlInput.addEventListener('change', async () => {
+async function fetchVideoMetadata(url) {
+    if (!url) return;
+
+    try {
+        // Show loading state
+        if (fetchVideoInfoBtn) {
+            fetchVideoInfoBtn.textContent = '⏳';
+            fetchVideoInfoBtn.disabled = true;
+        }
+
+        // Use noembed for oEmbed compatible sites (YouTube, Vimeo, etc.)
+        const response = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(url)}`);
+        const data = await response.json();
+
+        if (data.error) {
+            console.log('Could not fetch metadata:', data.error);
+            alert('動画情報を取得できませんでした。URLを確認してください。');
+        } else {
+            // Always overwrite or fill? User clicked "Get", so overwrite seems appropriate.
+            if (videoTitleInput) videoTitleInput.value = data.title || '';
+            if (videoAuthorInput) videoAuthorInput.value = data.author_name || '';
+            if (videoAuthorUrlInput) videoAuthorUrlInput.value = data.author_url || '';
+        }
+
+    } catch (error) {
+        console.error('Error fetching metadata:', error);
+        alert('情報の取得に失敗しました。');
+    } finally {
+        if (fetchVideoInfoBtn) {
+            fetchVideoInfoBtn.textContent = '⬇︎';
+            fetchVideoInfoBtn.disabled = false;
+        }
+    }
+}
+
+if (fetchVideoInfoBtn && videoUrlInput) {
+    fetchVideoInfoBtn.addEventListener('click', () => {
         const url = videoUrlInput.value.trim();
-        if (!url) return;
-
-        // Simple validation or skip if already filled? 
-        // User might want to overwrite, so we'll fetch if URL changed.
-
-        try {
-            // Show loading state?
-            videoUrlInput.style.opacity = '0.5';
-
-            // Use noembed for oEmbed compatible sites (YouTube, Vimeo, etc.)
-            const response = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(url)}`);
-            const data = await response.json();
-
-            if (data.error) {
-                console.log('Could not fetch metadata:', data.error);
-                return;
-            }
-
-            if (data.title && !videoTitleInput.value) {
-                videoTitleInput.value = data.title;
-            }
-
-            // "author_name" comes from YouTube/Vimeo oEmbed
-            if (data.author_name && !videoAuthorInput.value) {
-                videoAuthorInput.value = data.author_name;
-            }
-
-            // Save author_url if available
-            if (data.author_url && videoAuthorUrlInput) {
-                videoAuthorUrlInput.value = data.author_url;
-            }
-
-        } catch (error) {
-            console.error('Error fetching video metadata:', error);
-        } finally {
-            videoUrlInput.style.opacity = '1';
+        if (url) {
+            fetchVideoMetadata(url);
+        } else {
+            alert('URLを入力してください');
         }
     });
+
 }
+
 
 function closeVideoModal() {
     videoModal.classList.remove('active');

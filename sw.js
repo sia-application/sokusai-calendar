@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sokusai-calendar-v29';
+const CACHE_NAME = 'sokusai-calendar-v33';
 const ASSETS = [
     './',
     './index.html',
