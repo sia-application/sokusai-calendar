@@ -340,12 +340,12 @@ async function downloadCalendarImage() {
         link.click();
 
         downloadBtn.classList.remove('downloading');
-        downloadBtn.innerHTML = '<span class="icon">📷</span>画像をダウンロード';
+        downloadBtn.innerHTML = '<span class="icon">📷</span>画像DL';
     } catch (error) {
         console.error('Download failed:', error);
         alert('画像のダウンロードに失敗しました。');
         downloadBtn.classList.remove('downloading');
-        downloadBtn.innerHTML = '<span class="icon">📷</span>画像をダウンロード';
+        downloadBtn.innerHTML = '<span class="icon">📷</span>画像DL';
     }
 }
 
