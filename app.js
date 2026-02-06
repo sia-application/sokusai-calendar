@@ -1095,7 +1095,9 @@ function createVideoElement(video) {
     header.className = 'video-accordion-header';
     header.innerHTML = `
         <div class="video-header-left">
-            <div class="video-accordion-title">${escapeHtml(video.title)}</div>
+            <div class="video-accordion-title">
+                <a href="${escapeHtml(video.url)}" target="_blank" rel="noopener noreferrer" class="title-link" onclick="event.stopPropagation()">${escapeHtml(video.title)}</a>
+            </div>
             ${authorHtml}
         </div>
         <div class="video-header-right">
@@ -1147,6 +1149,18 @@ function createVideoElement(video) {
         videoToDeleteId = video.id;
         videoDeleteModal.classList.add('active');
         videoDeletePasswordInput.focus();
+    });
+
+    // Category click event (Filter by this category)
+    const categoryBadge = header.querySelector('.video-category');
+    categoryBadge.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent accordion toggle
+        const category = video.category || 'other';
+        if (videoFilterSelect) {
+            videoFilterSelect.value = category;
+            // Trigger change event manually
+            videoFilterSelect.dispatchEvent(new Event('change'));
+        }
     });
 
     return accordionItem;
