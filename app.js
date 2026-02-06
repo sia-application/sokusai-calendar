@@ -245,9 +245,6 @@ function createDayElement(dayNum, dateStr, isOtherMonth, dayOfWeek, isToday = fa
         eventBadge.style.backgroundColor = event.color || '#8b5cf6';
 
         let displayTitle = event.title;
-        if (displayTitle.length > 4) {
-            displayTitle = displayTitle.substring(0, 4) + '...';
-        }
         let badgeContent = escapeHtml(displayTitle);
         // Labels removed as per user request
         eventBadge.innerHTML = badgeContent;
