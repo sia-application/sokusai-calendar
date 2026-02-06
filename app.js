@@ -35,6 +35,37 @@ let events = [];
 let selectedDate = null;
 let selectedColor = '#8b5cf6';
 
+// Video Categories state & DOM
+let videoCategories = [];
+const videoCategorySelect = document.getElementById('videoCategory');
+// videoFilterSelect is handled below/consolidated
+const openCategoryModalBtn = document.getElementById('openCategoryModalBtn');
+const categoryModal = document.getElementById('categoryModal');
+const closeCategoryModalBtn = document.getElementById('closeCategoryModalBtn');
+const cancelCategoryBtn = document.getElementById('cancelCategoryBtn');
+const categoryForm = document.getElementById('categoryForm');
+const categoryColorPicker = document.getElementById('categoryColorPicker');
+let selectedCategoryColor = 'linear-gradient(135deg, #ef4444, #dc2626)'; // Default red
+
+// Video State (Consolidated)
+const videoList = document.getElementById('videoList');
+const openVideoModalBtn = document.getElementById('openVideoModalBtn');
+const videoModal = document.getElementById('videoModal');
+const closeVideoModalBtn = document.getElementById('closeVideoModalBtn');
+const cancelVideoBtn = document.getElementById('cancelVideoBtn');
+const videoForm = document.getElementById('videoForm');
+// Video Delete Modal Elements
+const videoDeleteModal = document.getElementById('videoDeleteModal');
+const closeVideoDeleteModalBtn = document.getElementById('closeVideoDeleteModalBtn');
+const cancelVideoDeleteBtn = document.getElementById('cancelVideoDeleteBtn');
+const confirmVideoDeleteBtn = document.getElementById('confirmVideoDeleteBtn');
+const videoDeletePasswordInput = document.getElementById('videoDeletePasswordInput');
+const videoDeleteError = document.getElementById('videoDeleteError');
+const videoFilterSelect = document.getElementById('videoFilter');
+let videoToDeleteId = null;
+let currentVideoFilter = 'all';
+let currentVideos = [];
+
 // ===== Countdown Function =====
 function updateCountdown() {
     if (!countdownEl) return;
@@ -997,32 +1028,156 @@ if (confirmEventDeleteBtn) {
 }
 
 // ===== Video Tab Functions =====
-const videoList = document.getElementById('videoList');
-const openVideoModalBtn = document.getElementById('openVideoModalBtn');
-const videoModal = document.getElementById('videoModal');
-const closeVideoModalBtn = document.getElementById('closeVideoModalBtn');
-const cancelVideoBtn = document.getElementById('cancelVideoBtn');
-const videoForm = document.getElementById('videoForm');
-
-// Video Delete Modal Elements
-const videoDeleteModal = document.getElementById('videoDeleteModal');
-const closeVideoDeleteModalBtn = document.getElementById('closeVideoDeleteModalBtn');
-const cancelVideoDeleteBtn = document.getElementById('cancelVideoDeleteBtn');
-const confirmVideoDeleteBtn = document.getElementById('confirmVideoDeleteBtn');
-const videoDeletePasswordInput = document.getElementById('videoDeletePasswordInput');
-const videoDeleteError = document.getElementById('videoDeleteError');
-
-// ===== NEW FILTER LOGIC =====
-const videoFilterSelect = document.getElementById('videoFilter');
-let videoToDeleteId = null;
-let currentVideoFilter = 'all';
-let currentVideos = [];
-
+// Elements are now declared at the top of file
 // Filter Select Event Listener
 if (videoFilterSelect) {
     videoFilterSelect.addEventListener('change', (e) => {
         currentVideoFilter = e.target.value;
         renderVideos(currentVideos);
+    });
+}
+
+// ===== Video Category Logic =====
+
+// Fetch Categories
+function subscribeToCategories() {
+    const q = query(collection(db, "video_categories"), orderBy("createdAt", "asc"));
+
+    onSnapshot(q, async (snapshot) => {
+        const categories = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        if (categories.length === 0) {
+            // Seed initial data if empty
+            await seedInitialCategories();
+        } else {
+            videoCategories = categories;
+            renderCategoryOptions();
+            // Re-render videos to update colors if categories changed
+            if (currentVideos.length > 0) {
+                renderVideos(currentVideos);
+            }
+        }
+    }, (error) => {
+        console.error("Error getting categories:", error);
+    });
+}
+
+// Seed Initial Categories
+async function seedInitialCategories() {
+    const initialCategories = [
+        { name: 'ライブ', color: 'linear-gradient(135deg, #ef4444, #dc2626)', value: 'live' },
+        { name: '練習', color: 'linear-gradient(135deg, #3b82f6, #2563eb)', value: 'practice' },
+        { name: 'その他', color: 'linear-gradient(135deg, #6b7280, #4b5563)', value: 'other' }
+    ];
+
+    try {
+        for (const cat of initialCategories) {
+            await addDoc(collection(db, "video_categories"), {
+                name: cat.name,
+                color: cat.color,
+                // store original value for compatibility check, though purely ID based is better long term
+                // For now we just use name as label.
+                value: cat.value,
+                createdAt: serverTimestamp()
+            });
+        }
+        console.log("Initial categories seeded");
+    } catch (e) {
+        console.error("Error seeding categories:", e);
+    }
+}
+
+// Render Options
+function renderCategoryOptions() {
+    if (!videoCategorySelect || !videoFilterSelect) return;
+
+    // Filter Select options
+    const currentFilter = videoFilterSelect.value;
+    videoFilterSelect.innerHTML = '<option value="all">すべての動画</option>';
+
+    // Form Select options
+    const currentSelection = videoCategorySelect.value;
+    videoCategorySelect.innerHTML = '';
+
+    videoCategories.forEach(cat => {
+        // Filter Option
+        const filterOption = document.createElement('option');
+        filterOption.value = cat.id; // Use ID for value
+        filterOption.textContent = cat.name;
+        videoFilterSelect.appendChild(filterOption);
+
+        // Form Option
+        const formOption = document.createElement('option');
+        formOption.value = cat.id;
+        formOption.textContent = cat.name;
+        videoCategorySelect.appendChild(formOption);
+    });
+
+    // Restore selections if valid
+    if (currentFilter !== 'all' && videoCategories.some(c => c.id === currentFilter)) {
+        videoFilterSelect.value = currentFilter;
+        // Update global filter state
+        currentVideoFilter = currentFilter;
+    } else if (currentFilter === 'all') {
+        videoFilterSelect.value = 'all';
+        currentVideoFilter = 'all';
+    } else {
+        // Fallback
+        videoFilterSelect.value = 'all';
+        currentVideoFilter = 'all';
+    }
+
+    if (currentSelection && videoCategories.some(c => c.id === currentSelection)) {
+        videoCategorySelect.value = currentSelection;
+    }
+}
+
+// Category Modal Logic
+function openCategoryModal() {
+    categoryModal.classList.add('active');
+}
+
+function closeCategoryModal() {
+    categoryModal.classList.remove('active');
+    document.getElementById('categoryName').value = '';
+    // Reset color picker? Keep last selected or default?
+}
+
+if (openCategoryModalBtn) openCategoryModalBtn.addEventListener('click', openCategoryModal);
+if (closeCategoryModalBtn) closeCategoryModalBtn.addEventListener('click', closeCategoryModal);
+if (cancelCategoryBtn) cancelCategoryBtn.addEventListener('click', closeCategoryModal);
+
+if (categoryColorPicker) {
+    categoryColorPicker.querySelectorAll('.color-option').forEach(option => {
+        option.addEventListener('click', () => {
+            categoryColorPicker.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+            option.classList.add('selected');
+            selectedCategoryColor = option.dataset.color;
+        });
+    });
+}
+
+// Add Category Form Submit
+if (categoryForm) {
+    categoryForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('categoryName').value.trim();
+        if (!name) return;
+
+        try {
+            await addDoc(collection(db, "video_categories"), {
+                name: name,
+                color: selectedCategoryColor,
+                createdAt: serverTimestamp()
+            });
+            closeCategoryModal();
+        } catch (error) {
+            console.error("Error adding category:", error);
+            alert("カテゴリー作成に失敗しました");
+        }
     });
 }
 
@@ -1048,12 +1203,34 @@ function renderVideos(videos) {
 
     videoList.innerHTML = '';
 
+    // Filter Logic
+    // Old videos have 'live', 'practice' stored in `category`.
+    // New videos have Category ID stored in `category`.
+
     const filteredVideos = currentVideoFilter === 'all'
         ? videos
-        : videos.filter(v => v.category === currentVideoFilter);
+        : videos.filter(v => {
+            // Match exactly (ID match) OR legacy match
+            if (v.category === currentVideoFilter) return true;
+
+            // Legacy support: if filter is seeded "live" category (which has an ID), 
+            // and video has "live" string.
+            // But we don't know the ID of "live" easily without looking it up.
+
+            // Solution: Find the name of the current filter category, and see if it matches video category string?
+            const filterCat = videoCategories.find(c => c.id === currentVideoFilter);
+            if (filterCat) {
+                // Check if video category matches the name (for legacy 'live' etc)
+                // or matches the 'value' field we used in seeding.
+                // Legacy videos have 'live', 'practice', 'other'.
+                // Seeded categories have 'value': 'live' etc.
+                if (v.category === filterCat.value) return true;
+            }
+            return false;
+        });
 
     if (filteredVideos.length === 0) {
-        videoList.innerHTML = '<div class="empty-state">まだ動画の登録はありません。</div>';
+        videoList.innerHTML = '<div class=\"empty-state\">まだ動画の登録はありません。</div>';
         return;
     }
 
@@ -1064,12 +1241,18 @@ function renderVideos(videos) {
 }
 
 function createVideoElement(video) {
-    const categoryClass = video.category || 'other';
-    const categoryName = {
-        'live': 'ライブ',
-        'practice': '練習',
-        'other': 'その他'
-    }[categoryClass] || 'その他';
+    // Determine Display Name and Color
+    // 1. Try to find by ID
+    let catObj = videoCategories.find(c => c.id === video.category);
+
+    // 2. If not found, try to find by legacy value ('live' etc)
+    if (!catObj) {
+        catObj = videoCategories.find(c => c.value === video.category);
+    }
+
+    // 3. Fallback
+    const categoryName = catObj ? catObj.name : (video.category || 'その他');
+    const categoryColor = catObj ? catObj.color : 'linear-gradient(135deg, #6b7280, #4b5563)'; // Default Gray
 
     const accordionItem = document.createElement('div');
     accordionItem.className = 'video-accordion-item';
@@ -1081,8 +1264,8 @@ function createVideoElement(video) {
     //      <div class="video-author">Author</div>
     //   </div>
     //   <div class="video-header-right">
-    //      <span class="video-category">Category</span>
-    //      <button class="video-delete-btn">Delete</button>
+    //      <span class="video-category dynamic" style="background: ${categoryColor}">${escapeHtml(categoryName)}</span>
+    //      <button class="video-delete-btn" data-id="${video.id}" aria-label="削除">🗑️</button>
     //      <span class="accordion-icon">▼</span>
     //   </div>
     // </div>
@@ -1101,7 +1284,7 @@ function createVideoElement(video) {
             ${authorHtml}
         </div>
         <div class="video-header-right">
-            <span class="video-category ${categoryClass}">${categoryName}</span>
+            <span class="video-category dynamic" style="background: ${categoryColor || '#6b7280'}">${escapeHtml(categoryName)}</span>
             <button class="video-delete-btn" data-id="${video.id}" aria-label="削除">🗑️</button>
             <span class="accordion-icon">▼</span>
         </div>
@@ -1155,9 +1338,10 @@ function createVideoElement(video) {
     const categoryBadge = header.querySelector('.video-category');
     categoryBadge.addEventListener('click', (e) => {
         e.stopPropagation(); // Prevent accordion toggle
-        const category = video.category || 'other';
-        if (videoFilterSelect) {
-            videoFilterSelect.value = category;
+
+        let filterId = catObj ? catObj.id : null;
+        if (filterId && videoFilterSelect) {
+            videoFilterSelect.value = filterId;
             // Trigger change event manually
             videoFilterSelect.dispatchEvent(new Event('change'));
         }
@@ -1345,4 +1529,5 @@ document.addEventListener('DOMContentLoaded', () => {
     subscribeToEvents();
     subscribeToPosts();
     subscribeToVideos();
+    subscribeToCategories();
 });

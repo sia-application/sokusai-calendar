@@ -1617,3 +1617,42 @@ body {
     padding: 16px 16px 0px 16px;
     border-top: 1px solid var(--border-color);
 }
+
+/* Category Creation UI */
+.input-with-button {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.input-with-button select {
+    flex: 1;
+}
+
+.btn-icon {
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon:hover {
+    background: var(--accent-primary);
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Dynamic Category Badges */
+/* We will use inline styles for background, but keep base styles here */
+.video-category.dynamic {
+    /* Base styles handled by .video-category, color via inline style */
+}
