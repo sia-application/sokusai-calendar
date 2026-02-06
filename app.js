@@ -1133,11 +1133,15 @@ function renderCategoryOptions() {
     if (currentSelection && videoCategories.some(c => c.id === currentSelection)) {
         videoCategorySelect.value = currentSelection;
     }
+
+    // Also render the list in the modal
+    renderCategoryList();
 }
 
 // Category Modal Logic
 function openCategoryModal() {
     categoryModal.classList.add('active');
+    renderCategoryList(); // Ensure list is fresh
 }
 
 function closeCategoryModal() {
@@ -1173,12 +1177,62 @@ if (categoryForm) {
                 color: selectedCategoryColor,
                 createdAt: serverTimestamp()
             });
-            closeCategoryModal();
+            // Clear input but keep modal open to see list update? 
+            // Or close it? User might want to add multiple. 
+            // Let's close for now as per previous behavior, but maybe clear input.
+            document.getElementById('categoryName').value = '';
+            // renderCategoryList handled by onSnapshot
         } catch (error) {
             console.error("Error adding category:", error);
             alert("カテゴリー作成に失敗しました");
         }
     });
+}
+
+function renderCategoryList() {
+    const listContainer = document.getElementById('categoryList');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = '';
+
+    if (videoCategories.length === 0) {
+        listContainer.innerHTML = '<div class="empty-state">カテゴリーがありません</div>';
+        return;
+    }
+
+    videoCategories.forEach(cat => {
+        const item = document.createElement('div');
+        item.className = 'category-list-item';
+
+        item.innerHTML = `
+            <div class="category-item-info">
+                <div class="category-color-dot" style="background: ${cat.color}"></div>
+                <span class="category-name">${escapeHtml(cat.name)}</span>
+            </div>
+            <button class="category-delete-btn" data-id="${cat.id}" aria-label="削除">🗑️</button>
+        `;
+
+        // Add delete listener
+        const deleteBtn = item.querySelector('.category-delete-btn');
+        deleteBtn.addEventListener('click', () => {
+            // Optional: Confirm delete
+            if (confirm(`カテゴリー「${cat.name}」を削除しますか？\nこのカテゴリーの動画は「その他」として扱われます。`)) {
+                deleteCategory(cat.id);
+            }
+        });
+
+        listContainer.appendChild(item);
+    });
+}
+
+async function deleteCategory(id) {
+    try {
+        await deleteDoc(doc(db, "video_categories", id));
+        // UI updates automatically via onSnapshot
+    } catch (error) {
+        console.error("Error deleting category:", error);
+        alert("削除に失敗しました");
+    }
 }
 
 function subscribeToVideos() {
