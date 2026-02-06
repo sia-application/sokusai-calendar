@@ -62,8 +62,10 @@ const confirmVideoDeleteBtn = document.getElementById('confirmVideoDeleteBtn');
 const videoDeletePasswordInput = document.getElementById('videoDeletePasswordInput');
 const videoDeleteError = document.getElementById('videoDeleteError');
 const videoFilterSelect = document.getElementById('videoFilter');
+const channelFilterSelect = document.getElementById('channelFilter');
 let videoToDeleteId = null;
 let currentVideoFilter = 'all';
+let currentChannelFilter = 'all';
 let currentVideos = [];
 let draggedVideoId = null; // For Reordering
 
@@ -1037,6 +1039,12 @@ if (videoFilterSelect) {
         renderVideos(currentVideos);
     });
 }
+if (channelFilterSelect) {
+    channelFilterSelect.addEventListener('change', (e) => {
+        currentChannelFilter = e.target.value;
+        renderVideos(currentVideos);
+    });
+}
 
 // ===== Video Category Logic =====
 
@@ -1097,7 +1105,7 @@ function renderCategoryOptions() {
 
     // Filter Select options
     const currentFilter = videoFilterSelect.value;
-    videoFilterSelect.innerHTML = '<option value="all">すべての動画</option>';
+    videoFilterSelect.innerHTML = '<option value="all">すべてのカテゴリー</option>';
 
     // Form Select options
     const currentSelection = videoCategorySelect.value;
@@ -1137,6 +1145,29 @@ function renderCategoryOptions() {
 
     // Also render the list in the modal
     renderCategoryList();
+}
+
+function renderChannelOptions() {
+    if (!channelFilterSelect) return;
+
+    const currentFilter = channelFilterSelect.value;
+    const channels = [...new Set(currentVideos.map(v => v.author).filter(Boolean))].sort();
+
+    channelFilterSelect.innerHTML = '<option value="all">すべてのチャンネル</option>';
+    channels.forEach(channel => {
+        const option = document.createElement('option');
+        option.value = channel;
+        option.textContent = channel;
+        channelFilterSelect.appendChild(option);
+    });
+
+    if (currentFilter === 'all' || channels.includes(currentFilter)) {
+        channelFilterSelect.value = currentFilter;
+        currentChannelFilter = currentFilter;
+    } else {
+        channelFilterSelect.value = 'all';
+        currentChannelFilter = 'all';
+    }
 }
 
 // Category Modal Logic
@@ -1262,6 +1293,7 @@ function subscribeToVideos() {
             return dateB - dateA;
         });
 
+        renderChannelOptions();
         renderVideos(currentVideos);
     }, (error) => {
         console.error("Error getting videos:", error);
@@ -1280,27 +1312,25 @@ function renderVideos(videos) {
     // Old videos have 'live', 'practice' stored in `category`.
     // New videos have Category ID stored in `category`.
 
-    const filteredVideos = currentVideoFilter === 'all'
-        ? videos
-        : videos.filter(v => {
-            // Match exactly (ID match) OR legacy match
-            if (v.category === currentVideoFilter) return true;
-
-            // Legacy support: if filter is seeded "live" category (which has an ID), 
-            // and video has "live" string.
-            // But we don't know the ID of "live" easily without looking it up.
-
-            // Solution: Find the name of the current filter category, and see if it matches video category string?
-            const filterCat = videoCategories.find(c => c.id === currentVideoFilter);
-            if (filterCat) {
-                // Check if video category matches the name (for legacy 'live' etc)
-                // or matches the 'value' field we used in seeding.
-                // Legacy videos have 'live', 'practice', 'other'.
-                // Seeded categories have 'value': 'live' etc.
-                if (v.category === filterCat.value) return true;
+    const filteredVideos = videos.filter(v => {
+        // Category Filter logic
+        let categoryMatch = currentVideoFilter === 'all';
+        if (!categoryMatch) {
+            if (v.category === currentVideoFilter) {
+                categoryMatch = true;
+            } else {
+                const filterCat = videoCategories.find(c => c.id === currentVideoFilter);
+                if (filterCat && v.category === filterCat.value) {
+                    categoryMatch = true;
+                }
             }
-            return false;
-        });
+        }
+
+        // Channel Filter logic
+        const channelMatch = currentChannelFilter === 'all' || v.author === currentChannelFilter;
+
+        return categoryMatch && channelMatch;
+    });
 
     if (filteredVideos.length === 0) {
         videoList.innerHTML = '<div class=\"empty-state\">まだ動画の登録はありません。</div>';

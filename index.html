@@ -90,7 +90,11 @@
         <div id="tab-video" class="tab-content">
             <div class="video-filter-wrapper">
                 <select id="videoFilter" class="form-select video-filter-select">
-                    <option value="all">すべての動画</option>
+                    <option value="all">すべてのカテゴリー</option>
+                    <!-- Populated by JS -->
+                </select>
+                <select id="channelFilter" class="form-select video-filter-select">
+                    <option value="all">すべてのチャンネル</option>
                     <!-- Populated by JS -->
                 </select>
             </div>
@@ -396,7 +400,7 @@
     </div>
 
     <footer class="site-footer">
-        <p>made for sia v1.3.2</p>
+        <p>made for sia v1.3.3</p>
     </footer>
 
     <script type="module" src="app.js"></script>
