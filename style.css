@@ -1722,3 +1722,23 @@ body {
     color: #ef4444;
     background: rgba(239, 68, 68, 0.1);
 }
+
+/* Video Reordering Styles */
+.video-accordion-item.dragging {
+    opacity: 0.5;
+    background: var(--bg-hover);
+    border: 2px dashed var(--accent-primary);
+}
+
+.video-accordion-item {
+    cursor: grab;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.video-accordion-item:active {
+    cursor: grabbing;
+}
+
+.video-list.drag-over {
+    background: rgba(var(--accent-primary-rgb), 0.05);
+}

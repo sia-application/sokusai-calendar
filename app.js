@@ -1,6 +1,6 @@
 // ===== State Management =====
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, getDoc, updateDoc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, getDoc, updateDoc, writeBatch, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAEfG5xJyZ7ISgJZn1rIjBjxMlWTQzQru0",
@@ -65,6 +65,7 @@ const videoFilterSelect = document.getElementById('videoFilter');
 let videoToDeleteId = null;
 let currentVideoFilter = 'all';
 let currentVideos = [];
+let draggedVideoId = null; // For Reordering
 
 // ===== Countdown Function =====
 function updateCountdown() {
@@ -1236,13 +1237,31 @@ async function deleteCategory(id) {
 }
 
 function subscribeToVideos() {
+    // We sort by 'order' asc. documents without 'order' field won't show up in a simple orderBy('order')
+    // So we fetch all and sort in memory for robustness during transition.
     const q = query(collection(db, "videos"), orderBy("createdAt", "desc"));
 
     onSnapshot(q, (snapshot) => {
-        currentVideos = snapshot.docs.map(doc => ({
+        const videos = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         }));
+
+        // In-memory sort: order ASC, fallback to createdAt DESC
+        currentVideos = videos.sort((a, b) => {
+            const orderA = a.order !== undefined ? a.order : Infinity;
+            const orderB = b.order !== undefined ? b.order : Infinity;
+
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+
+            // Fallback to createdAt if order is missing or same
+            const dateA = a.createdAt ? a.createdAt.toMillis() : 0;
+            const dateB = b.createdAt ? b.createdAt.toMillis() : 0;
+            return dateB - dateA;
+        });
+
         renderVideos(currentVideos);
     }, (error) => {
         console.error("Error getting videos:", error);
@@ -1377,6 +1396,62 @@ function createVideoElement(video) {
     // Toggle event
     header.addEventListener('click', () => {
         accordionItem.classList.toggle('active');
+    });
+
+    // Drag and Drop implementation
+    accordionItem.setAttribute('draggable', true);
+    accordionItem.dataset.id = video.id;
+
+    accordionItem.addEventListener('dragstart', (e) => {
+        draggedVideoId = video.id;
+        accordionItem.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        // Add a small delay to make the drag image look better (optional)
+    });
+
+    accordionItem.addEventListener('dragend', () => {
+        accordionItem.classList.remove('dragging');
+        draggedVideoId = null;
+        if (videoList) videoList.classList.remove('drag-over');
+    });
+
+    accordionItem.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+
+        const draggingItem = document.querySelector('.video-accordion-item.dragging');
+        if (!draggingItem || draggingItem === accordionItem) return;
+
+        // Visual feedback
+        const rect = accordionItem.getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+
+        if (e.clientY < midpoint) {
+            accordionItem.style.borderTop = '2px solid var(--accent-primary)';
+            accordionItem.style.borderBottom = '';
+        } else {
+            accordionItem.style.borderBottom = '2px solid var(--accent-primary)';
+            accordionItem.style.borderTop = '';
+        }
+    });
+
+    accordionItem.addEventListener('dragleave', () => {
+        accordionItem.style.borderTop = '';
+        accordionItem.style.borderBottom = '';
+    });
+
+    accordionItem.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        accordionItem.style.borderTop = '';
+        accordionItem.style.borderBottom = '';
+
+        if (!draggedVideoId || draggedVideoId === video.id) return;
+
+        // Calculate new order
+        const rect = accordionItem.getBoundingClientRect();
+        const dropAtTop = e.clientY < (rect.top + rect.height / 2);
+
+        reorderVideos(draggedVideoId, video.id, dropAtTop);
     });
 
     // Delete event (now in header)
@@ -1536,6 +1611,9 @@ if (videoForm) {
 
         if (title && url && author) {
             try {
+                // Get current max order
+                const maxOrder = currentVideos.reduce((max, v) => Math.max(max, v.order || 0), 0);
+
                 await addDoc(collection(db, "videos"), {
                     title: title,
                     url: url,
@@ -1543,6 +1621,7 @@ if (videoForm) {
                     author: author,
                     authorUrl: authorUrl,
                     password: password,
+                    order: maxOrder + 1, // Add to bottom
                     createdAt: serverTimestamp()
                 });
 
@@ -1553,6 +1632,48 @@ if (videoForm) {
             }
         }
     });
+}
+
+// Reordering Logic
+async function reorderVideos(draggedId, targetId, before) {
+    // 1. Get filtered list (the one the user is looking at)
+    const videosInList = Array.from(videoList.querySelectorAll('.video-accordion-item'))
+        .map(el => el.dataset.id);
+
+    const draggedIdx = videosInList.indexOf(draggedId);
+    let targetIdx = videosInList.indexOf(targetId);
+
+    if (draggedIdx === -1 || targetIdx === -1) return;
+
+    // 2. Remove dragged item
+    videosInList.splice(draggedIdx, 1);
+
+    // 3. Re-find target index after splice
+    targetIdx = videosInList.indexOf(targetId);
+
+    // 4. Insert before or after
+    if (before) {
+        videosInList.splice(targetIdx, 0, draggedId);
+    } else {
+        videosInList.splice(targetIdx + 1, 0, draggedId);
+    }
+
+    // 5. Build updates
+    try {
+        const batch = writeBatch(db);
+
+        // We only update the 'order' of videos that are currently visible/filtered
+        // This keeps it simple.
+        videosInList.forEach((id, index) => {
+            const vRef = doc(db, "videos", id);
+            batch.update(vRef, { order: index });
+        });
+
+        await batch.commit();
+        // UI will update automatically via subscribeToVideos
+    } catch (error) {
+        console.error("Error saving order:", error);
+    }
 }
 
 // Video Delete Action
