@@ -88,13 +88,17 @@
         </div>
 
         <div id="tab-video" class="tab-content">
-            <div class="video-wrapper">
-                <div class="video-container full-width">
-                    <div id="videoList" class="video-list">
-                        <!-- Videos will be rendered here -->
-                        <div class="empty-state">まだ動画の登録はありません。</div>
-                    </div>
-                </div>
+            <div class="video-filter-wrapper">
+                <select id="videoFilter" class="form-select video-filter-select">
+                    <option value="all">すべての動画</option>
+                    <option value="live">ライブ</option>
+                    <option value="practice">練習</option>
+                    <option value="other">その他</option>
+                </select>
+            </div>
+
+            <div id="videoList" class="video-list">
+                <!-- Videos will be rendered here -->
             </div>
         </div>
 

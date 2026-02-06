@@ -1011,32 +1011,53 @@ const cancelVideoDeleteBtn = document.getElementById('cancelVideoDeleteBtn');
 const confirmVideoDeleteBtn = document.getElementById('confirmVideoDeleteBtn');
 const videoDeletePasswordInput = document.getElementById('videoDeletePasswordInput');
 const videoDeleteError = document.getElementById('videoDeleteError');
+
+// ===== NEW FILTER LOGIC =====
+const videoFilterSelect = document.getElementById('videoFilter');
 let videoToDeleteId = null;
+let currentVideoFilter = 'all';
+let currentVideos = [];
+
+// Filter Select Event Listener
+if (videoFilterSelect) {
+    videoFilterSelect.addEventListener('change', (e) => {
+        currentVideoFilter = e.target.value;
+        renderVideos(currentVideos);
+    });
+}
 
 function subscribeToVideos() {
     const q = query(collection(db, "videos"), orderBy("createdAt", "desc"));
 
     onSnapshot(q, (snapshot) => {
-        const videos = snapshot.docs.map(doc => ({
+        currentVideos = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         }));
-        renderVideos(videos);
+        renderVideos(currentVideos);
     }, (error) => {
         console.error("Error getting videos:", error);
-        videoList.innerHTML = '<div class="empty-state">読み込みエラーが発生しました。</div>';
+        if (videoList) {
+            videoList.innerHTML = '<div class="empty-state">読み込みエラーが発生しました。</div>';
+        }
     });
 }
 
 function renderVideos(videos) {
+    if (!videoList) return;
+
     videoList.innerHTML = '';
 
-    if (videos.length === 0) {
+    const filteredVideos = currentVideoFilter === 'all'
+        ? videos
+        : videos.filter(v => v.category === currentVideoFilter);
+
+    if (filteredVideos.length === 0) {
         videoList.innerHTML = '<div class="empty-state">まだ動画の登録はありません。</div>';
         return;
     }
 
-    videos.forEach(video => {
+    filteredVideos.forEach(video => {
         const videoCard = createVideoElement(video);
         videoList.appendChild(videoCard);
     });
@@ -1050,8 +1071,44 @@ function createVideoElement(video) {
         'other': 'その他'
     }[categoryClass] || 'その他';
 
-    const card = document.createElement('div');
-    card.className = 'video-card';
+    const accordionItem = document.createElement('div');
+    accordionItem.className = 'video-accordion-item';
+
+    // Header Structure
+    // <div class="video-accordion-header">
+    //   <div class="video-header-left">
+    //      <div class="video-accordion-title">Title</div>
+    //      <div class="video-author">Author</div>
+    //   </div>
+    //   <div class="video-header-right">
+    //      <span class="video-category">Category</span>
+    //      <button class="video-delete-btn">Delete</button>
+    //      <span class="accordion-icon">▼</span>
+    //   </div>
+    // </div>
+
+    const authorHtml = video.authorUrl
+        ? `<a href="${escapeHtml(video.authorUrl)}" target="_blank" rel="noopener noreferrer" class="author-link" onclick="event.stopPropagation()">${escapeHtml(video.author)}</a>`
+        : `<span class="video-author">${escapeHtml(video.author)}</span>`;
+
+    const header = document.createElement('div');
+    header.className = 'video-accordion-header';
+    header.innerHTML = `
+        <div class="video-header-left">
+            <div class="video-accordion-title">${escapeHtml(video.title)}</div>
+            ${authorHtml}
+        </div>
+        <div class="video-header-right">
+            <span class="video-category ${categoryClass}">${categoryName}</span>
+            <button class="video-delete-btn" data-id="${video.id}" aria-label="削除">🗑️</button>
+            <span class="accordion-icon">▼</span>
+        </div>
+    `;
+
+    // Content Structure
+    // <div class="video-accordion-content">
+    //   (Video Player or Link)
+    // </div>
 
     let videoContent = '';
     const embedUrl = getVideoEmbedUrl(video.url);
@@ -1070,34 +1127,29 @@ function createVideoElement(video) {
         `;
     }
 
-    const authorHtml = video.authorUrl
-        ? `<a href="${escapeHtml(video.authorUrl)}" target="_blank" rel="noopener noreferrer" class="author-link">${escapeHtml(video.author)}</a>`
-        : `<span class="video-author">${escapeHtml(video.author)}</span>`;
+    const content = document.createElement('div');
+    content.className = 'video-accordion-content';
+    content.innerHTML = videoContent;
 
-    card.innerHTML = `
-        <div class="video-card-header">
-            <span class="video-category ${categoryClass}">${categoryName}</span>
-            <button class="video-delete-btn" data-id="${video.id}" aria-label="削除">🗑️</button>
-        </div>
-        ${videoContent}
-        <div class="video-title">
-            <a href="${escapeHtml(video.url)}" target="_blank" rel="noopener noreferrer" class="title-link">${escapeHtml(video.title)}</a>
-        </div>
-        <div class="video-footer">
-            ${authorHtml}
-        </div>
-    `;
+    // Add elements to item
+    accordionItem.appendChild(header);
+    accordionItem.appendChild(content);
 
-    // Add delete event listener
-    const deleteBtn = card.querySelector('.video-delete-btn');
+    // Toggle event
+    header.addEventListener('click', () => {
+        accordionItem.classList.toggle('active');
+    });
+
+    // Delete event (now in header)
+    const deleteBtn = header.querySelector('.video-delete-btn');
     deleteBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
+        e.stopPropagation(); // Prevent accordion toggle
         videoToDeleteId = video.id;
         videoDeleteModal.classList.add('active');
         videoDeletePasswordInput.focus();
     });
 
-    return card;
+    return accordionItem;
 }
 
 function getVideoEmbedUrl(url) {
