@@ -375,7 +375,6 @@ body {
     color: white;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
     cursor: pointer;
     transition: var(--transition);
 }
@@ -1254,7 +1253,6 @@ body {
     color: white;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
     cursor: pointer;
     transition: var(--transition);
     font-weight: 500;
