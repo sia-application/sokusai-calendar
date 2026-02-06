@@ -46,6 +46,7 @@
         <div class="tab-nav">
             <button class="tab-btn active" data-tab="tab-calendar">カレンダー</button>
             <button class="tab-btn" data-tab="tab-bulletin">掲示板</button>
+            <button class="tab-btn" data-tab="tab-video">動画</button>
         </div>
 
         <div id="tab-calendar" class="tab-content active">
@@ -86,9 +87,25 @@
             </div>
         </div>
 
-        <button id="openPostModalBtn" class="fab-btn" style="display: none;">
-            <span>✏️</span>
-        </button>
+        <div id="tab-video" class="tab-content">
+            <div class="video-wrapper">
+                <div class="video-container full-width">
+                    <div id="videoList" class="video-list">
+                        <!-- Videos will be rendered here -->
+                        <div class="empty-state">まだ動画の登録はありません。</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fab-container">
+            <button id="openPostModalBtn" class="fab-btn" style="display: none;">
+                <span>✏️</span>
+            </button>
+            <button id="openVideoModalBtn" class="fab-btn" style="display: none;">
+                <span>🎥</span>
+            </button>
+        </div>
     </div>
 
     <!-- Post Modal -->
@@ -135,6 +152,63 @@
                 <div class="modal-footer">
                     <button class="btn btn-cancel" id="cancelDeleteBtn">キャンセル</button>
                     <button class="btn btn-danger" id="confirmDeleteBtn">削除する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Modal -->
+    <div id="videoModal" class="modal">
+        <div class="modal-content bulletin-modal">
+            <div class="modal-header">
+                <h3>動画の登録</h3>
+                <button class="close-btn" id="closeVideoModalBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="videoForm" class="bulletin-form">
+                    <input type="hidden" id="videoTitle">
+                    <div class="form-group">
+                        <label for="videoUrl">動画URL</label>
+                        <input type="url" id="videoUrl" placeholder="https://..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="videoCategory">カテゴリー</label>
+                        <select id="videoCategory" class="form-select" required>
+                            <option value="live">ライブ</option>
+                            <option value="practice">練習</option>
+                            <option value="other">その他</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="videoAuthor">
+                    <input type="hidden" id="videoAuthorUrl">
+                    <div class="form-group">
+                        <label for="videoPassword">削除用パスワード</label>
+                        <input type="text" id="videoPassword" placeholder="パスワード（任意）" maxlength="4">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-cancel" id="cancelVideoBtn">キャンセル</button>
+                        <button type="submit" class="btn btn-primary">登録する</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Delete Modal -->
+    <div id="videoDeleteModal" class="modal">
+        <div class="modal-content password-modal">
+            <div class="modal-header">
+                <h3>動画の削除</h3>
+                <button class="close-btn" id="closeVideoDeleteModalBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <p>削除用パスワードを入力してください</p>
+                <input type="text" id="videoDeletePasswordInput" class="password-input" maxlength="4"
+                    placeholder="••••">
+                <div id="videoDeleteError" class="password-error"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-cancel" id="cancelVideoDeleteBtn">キャンセル</button>
+                    <button class="btn btn-danger" id="confirmVideoDeleteBtn">削除する</button>
                 </div>
             </div>
         </div>

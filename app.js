@@ -601,8 +601,13 @@ tabBtns.forEach(btn => {
         // Toggle FAB visibility
         if (tabId === 'tab-bulletin') {
             openPostModalBtn.style.display = 'flex';
+            openVideoModalBtn.style.display = 'none';
+        } else if (tabId === 'tab-video') {
+            openPostModalBtn.style.display = 'none';
+            openVideoModalBtn.style.display = 'flex';
         } else {
             openPostModalBtn.style.display = 'none';
+            openVideoModalBtn.style.display = 'none';
         }
     });
 });
@@ -991,7 +996,287 @@ if (confirmEventDeleteBtn) {
     });
 }
 
-// ===== Initialize =====
-renderCalendar();
-subscribeToPosts();
-subscribeToEvents();
+// ===== Video Tab Functions =====
+const videoList = document.getElementById('videoList');
+const openVideoModalBtn = document.getElementById('openVideoModalBtn');
+const videoModal = document.getElementById('videoModal');
+const closeVideoModalBtn = document.getElementById('closeVideoModalBtn');
+const cancelVideoBtn = document.getElementById('cancelVideoBtn');
+const videoForm = document.getElementById('videoForm');
+
+// Video Delete Modal Elements
+const videoDeleteModal = document.getElementById('videoDeleteModal');
+const closeVideoDeleteModalBtn = document.getElementById('closeVideoDeleteModalBtn');
+const cancelVideoDeleteBtn = document.getElementById('cancelVideoDeleteBtn');
+const confirmVideoDeleteBtn = document.getElementById('confirmVideoDeleteBtn');
+const videoDeletePasswordInput = document.getElementById('videoDeletePasswordInput');
+const videoDeleteError = document.getElementById('videoDeleteError');
+let videoToDeleteId = null;
+
+function subscribeToVideos() {
+    const q = query(collection(db, "videos"), orderBy("createdAt", "desc"));
+
+    onSnapshot(q, (snapshot) => {
+        const videos = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        renderVideos(videos);
+    }, (error) => {
+        console.error("Error getting videos:", error);
+        videoList.innerHTML = '<div class="empty-state">読み込みエラーが発生しました。</div>';
+    });
+}
+
+function renderVideos(videos) {
+    videoList.innerHTML = '';
+
+    if (videos.length === 0) {
+        videoList.innerHTML = '<div class="empty-state">まだ動画の登録はありません。</div>';
+        return;
+    }
+
+    videos.forEach(video => {
+        const videoCard = createVideoElement(video);
+        videoList.appendChild(videoCard);
+    });
+}
+
+function createVideoElement(video) {
+    const categoryClass = video.category || 'other';
+    const categoryName = {
+        'live': 'ライブ',
+        'practice': '練習',
+        'other': 'その他'
+    }[categoryClass] || 'その他';
+
+    const card = document.createElement('div');
+    card.className = 'video-card';
+
+    let videoContent = '';
+    const embedUrl = getVideoEmbedUrl(video.url);
+
+    if (embedUrl) {
+        videoContent = `
+            <div class="video-embed-container">
+                <iframe src="${embedUrl}" title="${escapeHtml(video.title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+        `;
+    } else {
+        videoContent = `
+            <a href="${escapeHtml(video.url)}" target="_blank" rel="noopener noreferrer" class="video-link">
+                <span>📺</span> 動画を見る
+            </a>
+        `;
+    }
+
+    const authorHtml = video.authorUrl
+        ? `<a href="${escapeHtml(video.authorUrl)}" target="_blank" rel="noopener noreferrer" class="author-link">${escapeHtml(video.author)}</a>`
+        : `<span class="video-author">${escapeHtml(video.author)}</span>`;
+
+    card.innerHTML = `
+        <div class="video-card-header">
+            <span class="video-category ${categoryClass}">${categoryName}</span>
+            <button class="video-delete-btn" data-id="${video.id}" aria-label="削除">🗑️</button>
+        </div>
+        ${videoContent}
+        <div class="video-title">
+            <a href="${escapeHtml(video.url)}" target="_blank" rel="noopener noreferrer" class="title-link">${escapeHtml(video.title)}</a>
+        </div>
+        <div class="video-footer">
+            ${authorHtml}
+        </div>
+    `;
+
+    // Add delete event listener
+    const deleteBtn = card.querySelector('.video-delete-btn');
+    deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        videoToDeleteId = video.id;
+        videoDeleteModal.classList.add('active');
+        videoDeletePasswordInput.focus();
+    });
+
+    return card;
+}
+
+function getVideoEmbedUrl(url) {
+    if (!url) return null;
+
+    // YouTube
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+    const youtubeMatch = url.match(youtubeRegex);
+    if (youtubeMatch && youtubeMatch[1]) {
+        return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+    }
+
+    // Vimeo
+    const vimeoRegex = /(?:vimeo\.com\/)(\d+)/i;
+    const vimeoMatch = url.match(vimeoRegex);
+    if (vimeoMatch && vimeoMatch[1]) {
+        return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    }
+
+    return null;
+}
+
+// Video Modal Event Listeners
+if (openVideoModalBtn) {
+    openVideoModalBtn.addEventListener('click', () => {
+        videoModal.classList.add('active');
+    });
+}
+
+// Auto-fetch metadata on URL change
+const videoUrlInput = document.getElementById('videoUrl');
+const videoTitleInput = document.getElementById('videoTitle');
+const videoAuthorInput = document.getElementById('videoAuthor');
+const videoAuthorUrlInput = document.getElementById('videoAuthorUrl');
+
+if (videoUrlInput) {
+    videoUrlInput.addEventListener('change', async () => {
+        const url = videoUrlInput.value.trim();
+        if (!url) return;
+
+        // Simple validation or skip if already filled? 
+        // User might want to overwrite, so we'll fetch if URL changed.
+
+        try {
+            // Show loading state?
+            videoUrlInput.style.opacity = '0.5';
+
+            // Use noembed for oEmbed compatible sites (YouTube, Vimeo, etc.)
+            const response = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(url)}`);
+            const data = await response.json();
+
+            if (data.error) {
+                console.log('Could not fetch metadata:', data.error);
+                return;
+            }
+
+            if (data.title && !videoTitleInput.value) {
+                videoTitleInput.value = data.title;
+            }
+
+            // "author_name" comes from YouTube/Vimeo oEmbed
+            if (data.author_name && !videoAuthorInput.value) {
+                videoAuthorInput.value = data.author_name;
+            }
+
+            // Save author_url if available
+            if (data.author_url && videoAuthorUrlInput) {
+                videoAuthorUrlInput.value = data.author_url;
+            }
+
+        } catch (error) {
+            console.error('Error fetching video metadata:', error);
+        } finally {
+            videoUrlInput.style.opacity = '1';
+        }
+    });
+}
+
+function closeVideoModal() {
+    videoModal.classList.remove('active');
+    videoForm.reset();
+}
+
+function closeVideoDeleteModal() {
+    videoDeleteModal.classList.remove('active');
+    videoDeletePasswordInput.value = '';
+    videoDeleteError.textContent = '';
+    videoToDeleteId = null;
+}
+
+if (closeVideoModalBtn) closeVideoModalBtn.addEventListener('click', closeVideoModal);
+if (cancelVideoBtn) cancelVideoBtn.addEventListener('click', closeVideoModal);
+
+if (closeVideoDeleteModalBtn) closeVideoDeleteModalBtn.addEventListener('click', closeVideoDeleteModal);
+if (cancelVideoDeleteBtn) cancelVideoDeleteBtn.addEventListener('click', closeVideoDeleteModal);
+
+if (videoModal) {
+    videoModal.addEventListener('click', (e) => {
+        if (e.target === videoModal) closeVideoModal();
+    });
+}
+
+if (videoDeleteModal) {
+    videoDeleteModal.addEventListener('click', (e) => {
+        if (e.target === videoDeleteModal) closeVideoDeleteModal();
+    });
+}
+
+// Video Form Submit
+if (videoForm) {
+    videoForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const title = document.getElementById('videoTitle').value.trim();
+        const url = document.getElementById('videoUrl').value.trim();
+        const category = document.getElementById('videoCategory').value;
+        const author = document.getElementById('videoAuthor').value.trim();
+        const authorUrlInput = document.getElementById('videoAuthorUrl');
+        const authorUrl = authorUrlInput ? authorUrlInput.value.trim() : '';
+        const password = document.getElementById('videoPassword').value.trim();
+
+        if (!title || !author) {
+            alert('動画情報を取得できませんでした。URLを確認してください。');
+            return;
+        }
+
+        if (title && url && author) {
+            try {
+                await addDoc(collection(db, "videos"), {
+                    title: title,
+                    url: url,
+                    category: category,
+                    author: author,
+                    authorUrl: authorUrl,
+                    password: password,
+                    createdAt: serverTimestamp()
+                });
+
+                closeVideoModal();
+            } catch (error) {
+                console.error('Error adding video:', error);
+                alert('エラーが発生しました: ' + error.message);
+            }
+        }
+    });
+}
+
+// Video Delete Action
+if (confirmVideoDeleteBtn) {
+    confirmVideoDeleteBtn.addEventListener('click', async () => {
+        if (!videoToDeleteId) return;
+
+        const password = videoDeletePasswordInput.value;
+
+        try {
+            const docRef = doc(db, "videos", videoToDeleteId);
+            const docSnap = await getDoc(docRef);
+
+            if (!docSnap.exists()) {
+                throw new Error('動画が見つかりません');
+            }
+
+            const videoData = docSnap.data();
+            if (videoData.password && videoData.password !== password) {
+                throw new Error('Incorrect password');
+            }
+
+            await deleteDoc(docRef);
+            closeVideoDeleteModal();
+        } catch (error) {
+            videoDeleteError.textContent = error.message === 'Incorrect password' ? 'パスワードが間違っています' : '削除エラー';
+        }
+    });
+}
+
+// ===== Initialization =====
+document.addEventListener('DOMContentLoaded', () => {
+    renderCalendar();
+    subscribeToEvents();
+    subscribeToPosts();
+    subscribeToVideos();
+});
